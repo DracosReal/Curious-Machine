@@ -1,0 +1,1170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Curious Machine</title>
+<!-- Fonts loaded async — game works fine without them if offline -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ─── RESET ─────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ─── TOKENS ─────────────────────────────────────────────────── */
+:root {
+  --bg:        #090f1a;
+  --card:      #0e1928;
+  --frame:     #131f30;
+  --text:      #e8dcc8;
+  --dim:       #6a7e8e;
+  --faint:     #3a4e5e;
+  --gold:      #c9a050;
+  --gold-lt:   #e8c878;
+  --gold-dk:   #8a6030;
+  --teal:      #3a8a9a;
+  --teal-lt:   #5aacbc;
+  --ok:        #3a7a5a;
+  --err:       #6a3838;
+  --border:    rgba(201,160,80,.18);
+  --r:         12px;
+  --rs:        8px;
+}
+
+/* ─── BASE ────────────────────────────────────────────────────
+   The simplest possible mobile layout:
+   body is just a normal scrollable page.
+   The starfield sits fixed behind everything.
+   Each .screen fills the viewport when active.
+   ──────────────────────────────────────────────────────────── */
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Jost', 'Segoe UI', system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+/* ─── STARFIELD ───────────────────────────────────────────── */
+#starfield {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+.star {
+  position: absolute;
+  border-radius: 50%;
+  background: #fff;
+  opacity: 0;
+  animation: twinkle var(--d,4s) infinite ease-in-out var(--delay,0s);
+}
+@keyframes twinkle {
+  0%,100% { opacity: 0; }
+  50%      { opacity: var(--op,.4); }
+}
+
+/* ─── SCREENS ─────────────────────────────────────────────── */
+.screen {
+  display: none;
+  position: relative;
+  z-index: 1;
+  min-height: 100svh;      /* svh = small viewport height, avoids iOS address bar */
+  min-height: 100vh;       /* fallback */
+  padding: 24px 20px 40px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.screen.active {
+  display: flex;
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.screen.active { animation: fadeIn .5s ease; }
+
+/* ─── TYPOGRAPHY ─────────────────────────────────────────── */
+.serif     { font-family: 'Cormorant Garamond', 'Georgia', serif; }
+.serif-i   { font-family: 'Cormorant Garamond', 'Georgia', serif; font-style: italic; }
+.title     { font-family: 'Cormorant Garamond','Georgia',serif; font-weight:500; font-size: clamp(2rem,7vw,3.2rem); letter-spacing:.08em; color:var(--gold-lt); line-height:1.1; text-shadow:0 0 40px rgba(201,160,80,.2); cursor:default; }
+.subtitle  { font-family: 'Cormorant Garamond','Georgia',serif; font-style:italic; font-size:clamp(.9rem,2.5vw,1.1rem); color:var(--dim); letter-spacing:.04em; margin-top:6px; }
+.voice     { font-family: 'Cormorant Garamond','Georgia',serif; font-style:italic; font-size:clamp(1rem,2.8vw,1.2rem); color:var(--dim); line-height:1.8; text-align:center; }
+.label     { font-size:.7rem; font-weight:500; letter-spacing:.2em; text-transform:uppercase; color:var(--faint); }
+
+.divider   { width:100px; height:1px; background:linear-gradient(90deg,transparent,var(--gold-dk),transparent); margin:18px auto; }
+
+/* ─── BUTTONS ────────────────────────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 52px;
+  padding: 12px 24px;
+  border: 1px solid var(--border);
+  border-radius: var(--rs);
+  background: var(--card);
+  color: var(--text);
+  font-family: 'Jost','Segoe UI',system-ui,sans-serif;
+  font-size: .95rem;
+  font-weight: 400;
+  letter-spacing: .05em;
+  cursor: pointer;
+  transition: border-color .2s, color .2s, background .2s;
+  text-align: center;
+  touch-action: manipulation;
+}
+.btn:hover, .btn:active {
+  border-color: var(--gold);
+  color: var(--gold-lt);
+}
+.btn-primary {
+  background: rgba(201,160,80,.08);
+  border-color: var(--gold-dk);
+  color: var(--gold-lt);
+  font-weight: 500;
+}
+.btn-primary:hover, .btn-primary:active {
+  background: rgba(201,160,80,.16);
+  border-color: var(--gold);
+}
+.btn-ghost {
+  border-color: rgba(201,160,80,.1);
+  color: var(--faint);
+  font-size: .82rem;
+  letter-spacing: .08em;
+  min-height: 44px;
+}
+.btn-ghost:hover, .btn-ghost:active {
+  border-color: var(--gold-dk);
+  color: var(--gold-dk);
+}
+
+/* ─── WELCOME SCREEN ─────────────────────────────────────── */
+#screen-welcome { text-align: center; gap: 0; }
+
+.welcome-emblem { width: 68px; height: 68px; margin-bottom: 14px; }
+
+.chapter-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 0 auto 18px;
+  padding: 10px 20px;
+  max-width: 440px;
+  width: 100%;
+  border: 1px solid rgba(201,160,80,.1);
+  border-radius: var(--rs);
+  background: rgba(201,160,80,.03);
+}
+.chapter-bar .label { margin-bottom: 0; }
+.chapter-bar-name { font-family:'Cormorant Garamond','Georgia',serif; font-size:.95rem; color:var(--gold-dk); font-style:italic; }
+
+.vignette {
+  max-width: 440px;
+  width: 100%;
+  margin: 0 auto 20px;
+  padding: 16px 20px;
+  border-left: 2px solid var(--gold-dk);
+  background: rgba(201,160,80,.03);
+  border-radius: 0 var(--rs) var(--rs) 0;
+  text-align: left;
+}
+.vignette-label { font-size:.64rem; letter-spacing:.18em; text-transform:uppercase; color:var(--gold-dk); margin-bottom:8px; }
+.vignette-text  { font-family:'Cormorant Garamond','Georgia',serif; font-style:italic; font-size:clamp(.9rem,2.3vw,1.05rem); line-height:1.8; color:var(--dim); }
+
+.hum {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 20px;
+  color: var(--faint);
+  font-size: .75rem;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+.hum-dot { width:6px; height:6px; border-radius:50%; background:var(--gold); animation:pulse 2.2s infinite ease-in-out; }
+@keyframes pulse { 0%,100%{opacity:.3;transform:scale(.8)} 50%{opacity:1;transform:scale(1.2)} }
+
+.welcome-btns { display:flex; gap:12px; flex-wrap:wrap; justify-content:center; }
+
+/* ─── MODE SELECT ────────────────────────────────────────── */
+#screen-mode { gap: 0; text-align: center; }
+
+.mode-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  max-width: 500px;
+  margin: 0 auto;
+}
+.mode-card {
+  padding: 18px 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  background: var(--card);
+  cursor: pointer;
+  transition: border-color .2s, transform .2s, background .2s;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  touch-action: manipulation;
+}
+.mode-card:hover, .mode-card:active {
+  border-color: var(--gold);
+  background: var(--frame);
+  transform: translateX(3px);
+}
+.mode-icon { width:42px; height:42px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:1.2rem; flex-shrink:0; background:rgba(201,160,80,.07); border:1px solid var(--gold-dk); }
+.mode-name { font-family:'Cormorant Garamond','Georgia',serif; font-size:1.25rem; font-weight:500; color:var(--gold-lt); margin-bottom:3px; }
+.mode-desc { font-size:.8rem; color:var(--dim); line-height:1.5; font-weight:300; }
+
+/* ─── PUZZLE SCREEN ──────────────────────────────────────── */
+#screen-puzzle {
+  justify-content: flex-start;
+  padding-top: 28px;
+  gap: 0;
+  width: 100%;
+  max-width: 780px;
+}
+
+.puz-header { display:flex; align-items:center; justify-content:space-between; width:100%; margin-bottom:16px; }
+.puz-title  { font-family:'Cormorant Garamond','Georgia',serif; font-size:1.05rem; color:var(--dim); font-style:italic; }
+.pips       { display:flex; gap:7px; }
+.pip        { width:8px; height:8px; border-radius:50%; border:1px solid var(--faint); background:transparent; transition:all .3s; }
+.pip.done   { background:var(--gold); border-color:var(--gold); }
+.pip.now    { background:transparent; border-color:var(--gold); }
+
+.frames {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+.frame-wrap { display:flex; align-items:center; gap:8px; }
+.frame-arr  { color:var(--faint); font-size:1.1rem; }
+.frame {
+  width: clamp(88px,17vw,130px);
+  height: clamp(88px,17vw,130px);
+  border: 1px solid var(--border);
+  border-radius: var(--rs);
+  background: var(--frame);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.frame svg { width:70%; height:70%; }
+.frame.qmark { border-style:dashed; border-color:var(--gold-dk); background:rgba(201,160,80,.04); }
+.qmark-glyph { font-family:'Cormorant Garamond','Georgia',serif; font-size:clamp(2.2rem,5vw,3rem); color:var(--gold-dk); font-style:italic; }
+
+.puz-q { font-size:.75rem; letter-spacing:.14em; text-transform:uppercase; color:var(--faint); text-align:center; margin-bottom:12px; }
+
+.hint-box {
+  width:100%; padding:11px 16px; border-radius:var(--rs);
+  border:1px solid rgba(201,160,80,.15); background:rgba(201,160,80,.04);
+  font-family:'Cormorant Garamond','Georgia',serif; font-style:italic;
+  font-size:.98rem; color:var(--gold-dk); text-align:center; line-height:1.6;
+  margin-bottom:10px; display:none;
+}
+.hint-box.show { display:block; }
+
+.response {
+  width:100%; padding:13px 16px; border-radius:var(--rs);
+  border:1px solid transparent; background:transparent;
+  font-family:'Cormorant Garamond','Georgia',serif; font-style:italic;
+  font-size:clamp(.92rem,2.4vw,1.05rem); color:var(--dim);
+  text-align:center; line-height:1.65; margin-bottom:12px;
+  white-space:pre-wrap; word-wrap:break-word;
+  display:none;
+}
+.response.show           { display:block; border-color:var(--border); background:var(--card); }
+.response.show.good      { color:#8ad0a8; border-color:rgba(58,122,90,.3); }
+
+.opts { display:grid; grid-template-columns:1fr 1fr; gap:10px; width:100%; margin-bottom:14px; }
+.opt {
+  min-height: 56px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--rs);
+  background: var(--card);
+  color: var(--text);
+  font-family: 'Jost','Segoe UI',system-ui,sans-serif;
+  font-size: .86rem;
+  cursor: pointer;
+  transition: border-color .2s, color .2s, background .2s;
+  text-align: center;
+  line-height: 1.4;
+  touch-action: manipulation;
+}
+.opt:hover:not(:disabled), .opt:active:not(:disabled) {
+  border-color: var(--teal);
+  color: var(--teal-lt);
+  background: rgba(58,138,154,.08);
+}
+.opt:disabled { cursor: default; }
+.opt.good  { border-color:var(--ok)!important;  color:#6ad090!important; background:rgba(58,122,90,.15)!important; }
+.opt.bad   { border-color:var(--err)!important; color:#d08080!important; background:rgba(106,56,56,.15)!important; }
+
+.puz-foot { display:flex; align-items:center; justify-content:space-between; width:100%; gap:10px; flex-wrap:wrap; }
+.btn-hint-sm  { font-size:.78rem; min-height:44px; padding:10px 18px; border-color:rgba(201,160,80,.1); color:var(--gold-dk); }
+.btn-hint-sm:hover,.btn-hint-sm:active { border-color:var(--gold); color:var(--gold); }
+.btn-reveal   { font-size:.78rem; min-height:44px; padding:10px 18px; color:var(--faint); border-color:rgba(255,255,255,.06); display:none; }
+.btn-next     { font-size:.9rem; min-height:52px; padding:13px 24px; display:none; }
+
+/* ─── END SCREEN ─────────────────────────────────────────── */
+#screen-end { text-align:center; gap:0; }
+
+.ch-panel {
+  max-width: 500px;
+  width: 100%;
+  margin: 18px auto 0;
+  padding: 22px 24px;
+  border: 1px solid rgba(201,160,80,.22);
+  border-radius: var(--r);
+  background: rgba(201,160,80,.04);
+  text-align: left;
+  animation: fadeIn .7s ease .3s both;
+}
+.ch-badge { font-size:.64rem; letter-spacing:.2em; text-transform:uppercase; color:var(--gold-dk); margin-bottom:9px; display:flex; align-items:center; gap:8px; }
+.ch-badge::before { content:''; width:18px; height:1px; background:var(--gold-dk); }
+.ch-title { font-family:'Cormorant Garamond','Georgia',serif; font-size:1.3rem; color:var(--gold-lt); margin-bottom:12px; line-height:1.2; }
+.ch-text  { font-family:'Cormorant Garamond','Georgia',serif; font-style:italic; font-size:.98rem; line-height:1.85; color:var(--dim); }
+.ch-text em { color:var(--gold-dk); font-style:normal; }
+.ch-text p+p { margin-top:10px; }
+.ch-pips  { display:flex; align-items:center; gap:8px; margin-top:14px; flex-wrap:wrap; }
+.ch-pip   { width:10px; height:10px; border-radius:50%; border:1px solid var(--faint); background:transparent; transition:all .4s; }
+.ch-pip.on  { background:var(--gold-dk); border-color:var(--gold); }
+.ch-pip.cur { background:var(--gold-lt); border-color:var(--gold-lt); box-shadow:0 0 7px rgba(232,200,120,.4); }
+.ch-pip-label { font-size:.7rem; color:var(--faint); letter-spacing:.07em; }
+
+.end-btns { display:flex; gap:12px; flex-wrap:wrap; justify-content:center; }
+
+/* ─── MECHANISM OVERLAY ──────────────────────────────────── */
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(7,13,24,.93);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.overlay.show { display: flex; }
+
+.reveal-card {
+  max-width: 460px;
+  width: 100%;
+  padding: 32px 28px;
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  background: var(--card);
+  text-align: center;
+  animation: fadeIn .3s ease;
+}
+.reveal-title { font-family:'Cormorant Garamond','Georgia',serif; font-size:1.35rem; color:var(--gold-lt); margin-bottom:7px; }
+.reveal-rule  { font-size:.86rem; color:var(--dim); letter-spacing:.03em; margin-bottom:18px; line-height:1.6; }
+.reveal-frames { display:flex; justify-content:center; gap:8px; margin-bottom:22px; flex-wrap:wrap; }
+.reveal-frame  { width:76px; height:76px; border:1px solid var(--border); border-radius:var(--rs); background:var(--frame); display:flex; align-items:center; justify-content:center; }
+.reveal-frame svg { width:68%; height:68%; }
+
+/* ─── ARCHIVE OVERLAY ────────────────────────────────────── */
+.archive-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  background: rgba(7,13,24,.97);
+  display: none;
+  flex-direction: column;
+}
+.archive-overlay.show { display: flex; }
+.arc-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 24px;
+  border-bottom: 1px solid rgba(201,160,80,.1);
+  flex-shrink: 0;
+}
+.arc-head-title { font-family:'Cormorant Garamond','Georgia',serif; font-size:1.4rem; color:var(--gold-lt); }
+.arc-body { flex:1; overflow-y:auto; padding:24px; display:flex; flex-direction:column; gap:28px; }
+.arc-chapter { max-width:580px; padding-left:20px; border-left:2px solid var(--gold-dk); }
+.arc-num   { font-size:.63rem; letter-spacing:.2em; text-transform:uppercase; color:var(--gold-dk); margin-bottom:5px; }
+.arc-title { font-family:'Cormorant Garamond','Georgia',serif; font-size:1.25rem; color:var(--gold-lt); margin-bottom:12px; }
+.arc-text  { font-family:'Cormorant Garamond','Georgia',serif; font-style:italic; font-size:.97rem; line-height:1.9; color:var(--dim); }
+.arc-text em { color:var(--gold-dk); font-style:normal; }
+.arc-text p+p { margin-top:11px; }
+.arc-locked { font-family:'Cormorant Garamond','Georgia',serif; font-style:italic; font-size:.97rem; color:var(--faint); line-height:1.6; filter:blur(2px); user-select:none; }
+
+/* ─── DASHBOARD OVERLAY ──────────────────────────────────── */
+.dash-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: #070d18;
+  display: none;
+  flex-direction: column;
+}
+.dash-overlay.show { display: flex; }
+.dash-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 24px;
+  border-bottom: 1px solid rgba(58,138,154,.2);
+  flex-shrink: 0;
+}
+.dash-badge { padding:3px 9px; border-radius:3px; background:rgba(58,138,154,.1); border:1px solid rgba(58,138,154,.2); font-size:.63rem; letter-spacing:.2em; text-transform:uppercase; color:var(--teal); margin-right:10px; }
+.dash-head-title { font-family:'Cormorant Garamond','Georgia',serif; font-size:1.3rem; color:var(--dim); }
+.dash-body { flex:1; overflow-y:auto; padding:22px 24px; display:flex; flex-direction:column; gap:22px; }
+.stats-row { display:flex; gap:12px; flex-wrap:wrap; }
+.stat { flex:1; min-width:110px; padding:14px 16px; border:1px solid rgba(58,138,154,.2); border-radius:var(--r); background:#0c1622; }
+.stat-val  { font-size:1.7rem; font-weight:600; color:var(--teal-lt); letter-spacing:-.02em; }
+.stat-lbl  { font-size:.7rem; letter-spacing:.12em; text-transform:uppercase; color:var(--faint); margin-top:3px; }
+.stat-note { font-size:.75rem; color:var(--dim); margin-top:5px; font-style:italic; }
+.dsec { display:flex; flex-direction:column; gap:9px; }
+.dsec-title { font-size:.68rem; letter-spacing:.2em; text-transform:uppercase; color:var(--faint); display:flex; align-items:center; gap:9px; }
+.dsec-title::after { content:''; flex:1; height:1px; background:rgba(58,138,154,.2); }
+.chart-wrap { border:1px solid rgba(58,138,154,.2); border-radius:var(--r); background:#0c1622; padding:14px; }
+canvas { display:block; width:100%!important; }
+.sess-table { width:100%; border-collapse:collapse; }
+.sess-table th { text-align:left; font-size:.66rem; letter-spacing:.15em; text-transform:uppercase; color:var(--faint); padding:7px 11px; border-bottom:1px solid rgba(58,138,154,.2); font-weight:400; }
+.sess-table td { padding:9px 11px; font-size:.8rem; color:var(--dim); border-bottom:1px solid rgba(58,138,154,.06); vertical-align:middle; }
+.sess-table tr:last-child td { border-bottom:none; }
+.pill { display:inline-block; padding:2px 7px; border-radius:10px; font-size:.76rem; font-weight:500; }
+.pill-hi  { background:rgba(58,122,90,.2);  color:#6ad090; }
+.pill-mid { background:rgba(201,160,80,.15); color:var(--gold); }
+.pill-lo  { background:rgba(106,56,56,.2);   color:#d08080; }
+.chip { display:inline-block; padding:2px 7px; border-radius:3px; font-size:.7rem; letter-spacing:.05em; border:1px solid rgba(58,138,154,.2); color:var(--faint); }
+.dash-actions { display:flex; gap:10px; flex-wrap:wrap; }
+.da { flex:1; min-width:130px; min-height:48px; padding:11px 18px; border-radius:var(--rs); font-family:'Jost','Segoe UI',system-ui,sans-serif; font-size:.82rem; font-weight:500; cursor:pointer; letter-spacing:.05em; transition:all .2s; }
+.da-blue { background:rgba(58,138,154,.1); border:1px solid rgba(58,138,154,.25); color:var(--teal-lt); }
+.da-blue:hover,.da-blue:active { background:rgba(58,138,154,.18); border-color:var(--teal); }
+.da-gold { background:rgba(201,160,80,.06); border:1px solid rgba(201,160,80,.15); color:var(--gold-dk); }
+.da-gold:hover,.da-gold:active { background:rgba(201,160,80,.12); border-color:var(--gold-dk); color:var(--gold); }
+.da-red  { background:rgba(106,56,56,.1); border:1px solid rgba(106,56,56,.2); color:#9a5050; }
+.da-red:hover,.da-red:active  { background:rgba(106,56,56,.18); border-color:#9a5050; color:#d08080; }
+.dash-input { width:100%; padding:11px 14px; background:#0c1622; border:1px solid rgba(58,138,154,.2); border-radius:var(--rs); color:var(--text); font-family:'Jost','Segoe UI',system-ui,sans-serif; font-size:.88rem; outline:none; transition:border-color .2s; }
+.dash-input:focus { border-color:var(--teal); }
+.dash-input-label { font-size:.72rem; letter-spacing:.1em; text-transform:uppercase; color:var(--faint); margin-bottom:5px; display:block; }
+.dash-empty { text-align:center; padding:36px 20px; font-family:'Cormorant Garamond','Georgia',serif; font-style:italic; color:var(--faint); font-size:1.05rem; }
+.trend-up   { color:#6ad090; font-size:.73rem; }
+.trend-down { color:#d08080; font-size:.73rem; }
+.trend-flat { color:var(--faint); font-size:.73rem; }
+
+/* ─── TOAST ──────────────────────────────────────────────── */
+#toast {
+  position: fixed;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%) translateY(16px);
+  z-index: 999;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--rs);
+  padding: 11px 22px;
+  font-size: .83rem;
+  color: var(--dim);
+  opacity: 0;
+  transition: opacity .3s, transform .3s;
+  pointer-events: none;
+  white-space: nowrap;
+}
+#toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+/* ─── RESPONSIVE ─────────────────────────────────────────── */
+@media(max-width:500px) {
+  .opts { grid-template-columns:1fr; }
+  .mode-card { padding:15px 16px; }
+  .title { font-size:1.85rem; }
+}
+
+@keyframes sweep {
+  from { transform: rotate(-10deg); }
+  to   { transform: rotate(350deg); }
+}
+</style>
+</head>
+<body>
+
+<!-- STARFIELD -->
+<div id="starfield"></div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<!-- MECHANISM REVEAL -->
+<div class="overlay" id="overlay-reveal">
+  <div class="reveal-card">
+    <div class="reveal-title">The Mechanism</div>
+    <div class="reveal-rule" id="reveal-rule"></div>
+    <div class="reveal-frames" id="reveal-frames"></div>
+    <button class="btn btn-primary" style="min-width:180px" onclick="closeReveal()">Continue the exploration</button>
+  </div>
+</div>
+
+<!-- ARCHIVE -->
+<div class="archive-overlay" id="overlay-archive">
+  <div class="arc-head">
+    <div class="arc-head-title">The Archive</div>
+    <button class="btn btn-ghost" onclick="closeArchive()">✕ Close</button>
+  </div>
+  <div class="arc-body" id="arc-body"></div>
+</div>
+
+<!-- DASHBOARD -->
+<div class="dash-overlay" id="overlay-dash">
+  <div class="dash-head">
+    <div>
+      <span class="dash-badge">Caregiver View</span>
+      <span class="dash-head-title">Session Analytics</span>
+    </div>
+    <button class="btn btn-ghost" onclick="closeDash()">✕ Close</button>
+  </div>
+  <div class="dash-body" id="dash-body"></div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     SCREENS
+     ═══════════════════════════════════════════════════════════ -->
+
+<!-- WELCOME -->
+<div id="screen-welcome" class="screen active">
+  <svg class="welcome-emblem" viewBox="0 0 70 70" fill="none">
+    <circle cx="35" cy="35" r="33" stroke="#c9a050" stroke-opacity=".3" stroke-width="1"/>
+    <circle cx="35" cy="35" r="22" stroke="#c9a050" stroke-opacity=".15" stroke-width="1"/>
+    <circle cx="35" cy="35" r="4" fill="#c9a050" fill-opacity=".5"/>
+    <line x1="35" y1="2"  x2="35" y2="14" stroke="#c9a050" stroke-opacity=".45" stroke-width="1.5"/>
+    <line x1="35" y1="56" x2="35" y2="68" stroke="#c9a050" stroke-opacity=".45" stroke-width="1.5"/>
+    <line x1="2"  y1="35" x2="14" y2="35" stroke="#c9a050" stroke-opacity=".45" stroke-width="1.5"/>
+    <line x1="56" y1="35" x2="68" y2="35" stroke="#c9a050" stroke-opacity=".45" stroke-width="1.5"/>
+    <line x1="35" y1="13" x2="35" y2="35" stroke="#c9a050" stroke-opacity=".65" stroke-width="1.5"
+          stroke-linecap="round" style="transform-origin:35px 35px;animation:sweep 8s linear infinite"/>
+  </svg>
+
+  <div class="title" id="welcome-title" onclick="titleTap()">The Curious Machine</div>
+  <div class="subtitle">— An Institute for Experimental Thought —</div>
+  <div class="divider"></div>
+
+  <div class="chapter-bar">
+    <span class="label">Current Chapter</span>
+    <span class="chapter-bar-name" id="ch-bar-name">The Awakening</span>
+  </div>
+
+  <div class="vignette">
+    <div class="vignette-label">The Machine speaks</div>
+    <div class="vignette-text" id="vignette-text"></div>
+  </div>
+
+  <div class="hum">
+    <div class="hum-dot"></div>
+    <span id="hum-label">Systems nominal · Anomaly detected</span>
+  </div>
+
+  <div class="welcome-btns">
+    <button class="btn btn-primary" style="min-width:190px;font-size:1rem" onclick="goToMode()">Enter the Laboratory</button>
+    <button class="btn btn-ghost" onclick="openArchive()">The Archive ›</button>
+  </div>
+</div>
+
+<!-- MODE SELECT -->
+<div id="screen-mode" class="screen">
+  <div class="label" style="margin-bottom:12px">Choose your approach</div>
+  <div class="title" style="font-size:clamp(1.5rem,5vw,2rem);margin-bottom:6px">How shall we proceed?</div>
+  <div class="subtitle" style="margin-bottom:26px">The Machine adapts to your disposition.</div>
+  <div class="mode-cards">
+    <div class="mode-card" onclick="startSession('observe')">
+      <div class="mode-icon">◎</div>
+      <div>
+        <div class="mode-name">Gentle Observation</div>
+        <div class="mode-desc">Clear patterns. Generous scaffolding. A contemplative pace.</div>
+      </div>
+    </div>
+    <div class="mode-card" onclick="startSession('investigate')">
+      <div class="mode-icon">◈</div>
+      <div>
+        <div class="mode-name">Curious Investigation</div>
+        <div class="mode-desc">Subtler transformations. Two-step logic. Fewer visual cues.</div>
+      </div>
+    </div>
+    <div class="mode-card" onclick="startSession('deconstruct')">
+      <div class="mode-icon">⬡</div>
+      <div>
+        <div class="mode-name">Deep Deconstruction</div>
+        <div class="mode-desc">Multi-variable patterns. Abstract composition. No anchoring.</div>
+      </div>
+    </div>
+  </div>
+  <div class="divider"></div>
+  <p class="voice" style="font-size:.95rem">There is no wrong answer to how we begin.</p>
+</div>
+
+<!-- PUZZLE -->
+<div id="screen-puzzle" class="screen">
+  <div class="puz-header">
+    <div class="puz-title" id="puz-title">Pattern Observation</div>
+    <div class="pips" id="pips"></div>
+  </div>
+
+  <div class="frames" id="frames"></div>
+
+  <div class="puz-q">What transformation governs this sequence?</div>
+
+  <div class="hint-box" id="hint-box"></div>
+  <div class="response" id="response"></div>
+
+  <div class="opts" id="opts"></div>
+
+  <div class="puz-foot">
+    <button class="btn btn-hint-sm" id="btn-hint" onclick="showHint()">✦ Hint</button>
+    <button class="btn btn-reveal" id="btn-reveal" onclick="showReveal()">Examine mechanism</button>
+    <button class="btn btn-primary btn-next" id="btn-next" onclick="nextPuzzle()">Next observation →</button>
+  </div>
+</div>
+
+<!-- END -->
+<div id="screen-end" class="screen">
+  <svg class="welcome-emblem" viewBox="0 0 70 70" fill="none">
+    <circle cx="35" cy="35" r="33" stroke="#c9a050" stroke-opacity=".45" stroke-width="1"/>
+    <text x="35" y="43" text-anchor="middle" fill="#c9a050" font-size="22" font-family="Georgia,serif">✦</text>
+  </svg>
+
+  <div class="title" style="font-size:clamp(1.5rem,5vw,2.2rem)" id="end-title">Session Complete</div>
+  <div class="divider"></div>
+  <p class="voice" id="end-msg"></p>
+
+  <div id="ch-panel"></div>
+
+  <div class="divider"></div>
+  <div class="end-btns">
+    <button class="btn btn-primary" style="min-width:170px" onclick="goToMode()">New Exploration</button>
+    <button class="btn btn-ghost" onclick="openArchive()">The Archive ›</button>
+    <button class="btn btn-ghost" onclick="goHome()">Home</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     SCRIPT
+     ═══════════════════════════════════════════════════════════ -->
+<script>
+/* =============================================================
+   COLOURS & SVG HELPERS
+   ============================================================= */
+const GOLD='#c9a050',TEAL='#3a8a9a',CORAL='#c07050',SAGE='#6a9a70',LAVENDER='#8a7aaa';
+const rand=a=>a[Math.floor(Math.random()*a.length)];
+
+const arrow=(a,c=GOLD)=>`<svg viewBox="0 0 100 100"><g transform="rotate(${a},50,50)"><polygon points="50,8 70,40 58,40 58,90 42,90 42,40 30,40" fill="${c}" opacity=".9"/></g></svg>`;
+const sq=(s,c=GOLD,a=0)=>{const h=s*22;return`<svg viewBox="0 0 100 100"><rect x="${50-h}" y="${50-h}" width="${h*2}" height="${h*2}" fill="${c}" opacity=".85" rx="3" transform="rotate(${a},50,50)"/></svg>`};
+const circ=(s,c=GOLD)=>`<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="${s*35}" fill="${c}" opacity=".85"/></svg>`;
+const tri=(s,c=GOLD,a=0)=>{const sd=s*40,h=sd*.866;return`<svg viewBox="0 0 100 100"><g transform="rotate(${a},50,50)"><polygon points="50,${50-h*.67} ${50+sd},${50+h*.33} ${50-sd},${50+h*.33}" fill="${c}" opacity=".85"/></g></svg>`};
+const diam=(s,c=GOLD,a=0)=>{const sd=s*38;return`<svg viewBox="0 0 100 100"><g transform="rotate(${a},50,50)"><polygon points="50,${50-sd} ${50+sd*.7},50 50,${50+sd} ${50-sd*.7},50" fill="${c}" opacity=".85"/></g></svg>`};
+const dtsSVG=(n,c=GOLD)=>{const p=[[],[50,50],[35,50,65,50],[50,30,32,62,68,62],[32,32,68,32,32,68,68,68],[50,22,26,45,74,45,32,75,68,75]];const pos=p[Math.min(n,5)];const cs=[];for(let i=0;i<pos.length;i+=2)cs.push(`<circle cx="${pos[i]}" cy="${pos[i+1]}" r="9" fill="${c}" opacity=".85"/>`);return`<svg viewBox="0 0 100 100">${cs.join('')}</svg>`};
+const hcirc=(flip,c=GOLD)=>`<svg viewBox="0 0 100 100"><g transform="scale(${flip?-1:1},1) translate(${flip?-100:0},0)"><path d="M 50 15 A 35 35 0 0 1 50 85 L 50 15 Z" fill="${c}" opacity=".85"/><line x1="50" y1="15" x2="50" y2="85" stroke="${c}" stroke-width="2" opacity=".5"/></g></svg>`;
+const spiral=(n,c=GOLD)=>{const r=28,ds=[];for(let i=0;i<n;i++){const a=(i/n)*Math.PI*2-Math.PI/2;ds.push(`<circle cx="${(50+r*Math.cos(a)).toFixed(1)}" cy="${(50+r*Math.sin(a)).toFixed(1)}" r="7" fill="${c}" opacity="${(.6+i/n*.4).toFixed(2)}"/>`)}return`<svg viewBox="0 0 100 100">${ds.join('')}</svg>`};
+
+/* =============================================================
+   PUZZLES
+   ============================================================= */
+const puzzlesByMode={
+  observe:[
+    {id:'obs-rot90',title:'The Rotating Form',renderFrames:()=>[arrow(0),arrow(90),arrow(180)],options:[{label:'Rotation: 90° clockwise',correct:true},{label:'Rotation: 90° counter-clockwise',correct:false},{label:'Reflection across vertical axis',correct:false},{label:'Oscillation: 180° alternating',correct:false}],hint:"What direction does the arrow point in each frame… and by how much does it shift?",revealText:"The arrow rotates exactly 90° clockwise with each step — a complete revolution every four frames."},
+    {id:'obs-scale',title:'The Growing Square',renderFrames:()=>[sq(.45,TEAL),sq(.65,TEAL),sq(.85,TEAL)],options:[{label:'Size: growing larger each step',correct:true},{label:'Size: shrinking each step',correct:false},{label:'Color: warming each step',correct:false},{label:'Shape: rotating each step',correct:false}],hint:"Observe the boundary of the shape. What changes between each frame?",revealText:"The square grows progressively larger with each frame — a uniform scaling transformation."},
+    {id:'obs-count',title:'The Multiplication',renderFrames:()=>[dtsSVG(1,CORAL),dtsSVG(2,CORAL),dtsSVG(3,CORAL),dtsSVG(4,CORAL)],options:[{label:'Count: one added each step',correct:true},{label:'Count: doubled each step',correct:false},{label:'Pattern: rotating arrangement',correct:false},{label:'Color: shifting each step',correct:false}],hint:"Count carefully. What quantity changes — and by precisely how much?",revealText:"One new element appears with each successive frame — a simple additive sequence: 1, 2, 3, 4, 5…"},
+    {id:'obs-color',title:'The Chromatic Drift',renderFrames:()=>[circ(.8,'#c04040'),circ(.8,'#c07040'),circ(.8,'#c0a040')],options:[{label:'Color: warm-to-cool progression',correct:true},{label:'Size: gradually growing',correct:false},{label:'Shape: morphing each frame',correct:false},{label:'Color: random variation',correct:false}],hint:"The form remains constant. What property shifts steadily across the frames?",revealText:"The circle's hue progresses through the warm spectrum — red → orange → yellow → green."},
+    {id:'obs-tri-rot',title:'The Turning Wedge',renderFrames:()=>[tri(.9,SAGE,0),tri(.9,SAGE,60),tri(.9,SAGE,120)],options:[{label:'Rotation: 60° clockwise each step',correct:true},{label:'Rotation: 90° clockwise each step',correct:false},{label:'Reflection: alternating horizontal',correct:false},{label:'Rotation: 45° clockwise each step',correct:false}],hint:"A triangle has three-fold symmetry. By what angle does each step advance?",revealText:"The triangle rotates exactly 60° clockwise with each step."},
+    {id:'obs-shrink',title:'The Diminishing Circle',renderFrames:()=>[circ(1.0,LAVENDER),circ(.7,LAVENDER),circ(.45,LAVENDER)],options:[{label:'Size: shrinking each step',correct:true},{label:'Size: growing each step',correct:false},{label:'Opacity: fading each step',correct:false},{label:'Color: cooling each step',correct:false}],hint:"The form is consistent. The space it occupies is not.",revealText:"The circle contracts progressively — a diminishing scaling transformation."},
+  ],
+  investigate:[
+    {id:'inv-rot45',title:'The Subtle Revolution',renderFrames:()=>[arrow(0,TEAL),arrow(45,TEAL),arrow(90,TEAL),arrow(135,TEAL)],options:[{label:'Rotation: 45° clockwise each step',correct:true},{label:'Rotation: 30° clockwise each step',correct:false},{label:'Rotation: 90° clockwise each step',correct:false},{label:'Oscillation: ±45° alternating',correct:false}],hint:"Eight equal steps would complete a full revolution.",revealText:"The arrow advances exactly 45° clockwise per frame."},
+    {id:'inv-count2',title:'The Accelerating Count',renderFrames:()=>[dtsSVG(1,CORAL),dtsSVG(3,CORAL),dtsSVG(5,CORAL)],options:[{label:'Count: two added each step',correct:true},{label:'Count: one added each step',correct:false},{label:'Count: doubled each step',correct:false},{label:'Count: three added each step',correct:false}],hint:"Consider the difference between each frame — not the total.",revealText:"Two elements are added with each step: 1, 3, 5, 7…"},
+    {id:'inv-reflect',title:'The Mirror Sequence',renderFrames:()=>[hcirc(false,GOLD),hcirc(true,GOLD),hcirc(false,GOLD),hcirc(true,GOLD)],options:[{label:'Reflection: alternating horizontal flip',correct:true},{label:'Rotation: 180° each step',correct:false},{label:'Rotation: 90° each step',correct:false},{label:'Color: alternating each step',correct:false}],hint:"Notice what remains constant and what inverts.",revealText:"The form reflects across the vertical axis with each step."},
+    {id:'inv-diamond',title:"The Diamond's Turn",renderFrames:()=>[diam(.9,SAGE,0),diam(.9,SAGE,45),diam(.9,SAGE,90),diam(.9,SAGE,135)],options:[{label:'Rotation: 45° clockwise each step',correct:true},{label:'Rotation: 30° clockwise each step',correct:false},{label:'Shape: alternating between forms',correct:false},{label:'Rotation: 60° clockwise each step',correct:false}],hint:"The diamond has bilateral symmetry — making some rotations deceptively similar.",revealText:"The diamond rotates 45° clockwise per step."},
+    {id:'inv-dual',title:'The Fading Form',renderFrames:()=>[sq(1.0,'#c04040',0),sq(.75,'#c07050',0),sq(.5,'#c0a060',0)],options:[{label:'Two variables: size shrinking + color warming',correct:true},{label:'Size: shrinking only',correct:false},{label:'Color: warming only',correct:false},{label:'Size: growing + color cooling',correct:false}],hint:"Examine both the boundary and the hue.",revealText:"Two properties shift simultaneously: the square contracts while its color warms from red toward gold."},
+  ],
+  deconstruct:[
+    {id:'dec-rot-color',title:'The Compound Transformation',renderFrames:()=>[arrow(0,'#c04040'),arrow(90,'#c07040'),arrow(180,'#c0a050'),arrow(270,SAGE)],options:[{label:'Rotation 90° CW + color spectrum progression',correct:true},{label:'Rotation 90° CW only',correct:false},{label:'Color shift only — direction is coincidental',correct:false},{label:'Rotation 45° CW + color alternating',correct:false}],hint:"Track both properties independently, then ask if they share a common interval.",revealText:"The arrow rotates 90° clockwise while the color advances through a warm-to-cool spectrum."},
+    {id:'dec-inverse',title:'The Inverse Relation',renderFrames:()=>[circ(.85,CORAL),`<svg viewBox="0 0 100 100"><circle cx="33" cy="50" r="24" fill="${CORAL}" opacity=".85"/><circle cx="67" cy="50" r="24" fill="${CORAL}" opacity=".85"/></svg>`,`<svg viewBox="0 0 100 100"><circle cx="50" cy="28" r="16" fill="${CORAL}" opacity=".85"/><circle cx="28" cy="68" r="16" fill="${CORAL}" opacity=".85"/><circle cx="72" cy="68" r="16" fill="${CORAL}" opacity=".85"/></svg>`],options:[{label:'Count grows +1 while individual size shrinks',correct:true},{label:'Count grows while total area is constant',correct:false},{label:'Size only — count is decorative',correct:false},{label:'Count doubles while size halves each step',correct:false}],hint:"Consider the relationship between quantity and individual magnitude.",revealText:"An inverse relationship: as count increases, each element's radius contracts."},
+    {id:'dec-spiral',title:'The Orbital System',renderFrames:()=>[spiral(3,GOLD),spiral(4,GOLD),spiral(5,GOLD)],options:[{label:'Count growing + orbital arrangement rotating',correct:true},{label:'Count growing only in fixed pattern',correct:false},{label:'Orbital rotation only — count is constant',correct:false},{label:'Random arrangement with count increasing',correct:false}],hint:"Note both the number of elements and the angle at which they are distributed.",revealText:"Two coupled changes: elements are added while the arrangement rotates."},
+    {id:'dec-triple',title:'The Three-Body Problem',renderFrames:()=>[`<svg viewBox="0 0 100 100"><rect x="28" y="28" width="44" height="44" fill="#c04040" opacity=".85" rx="3" transform="rotate(0,50,50)"/></svg>`,`<svg viewBox="0 0 100 100"><rect x="20" y="20" width="60" height="60" fill="#c07040" opacity=".85" rx="3" transform="rotate(30,50,50)"/></svg>`,`<svg viewBox="0 0 100 100"><rect x="12" y="12" width="76" height="76" fill="#c0a050" opacity=".85" rx="3" transform="rotate(60,50,50)"/></svg>`],options:[{label:'Size growing + rotation 30° CW + color warming',correct:true},{label:'Rotation only — 30° clockwise each step',correct:false},{label:'Size growing + color warming, no rotation',correct:false},{label:'Color shift only — other properties are noise',correct:false}],hint:"Three separate properties are in motion. Enumerate them independently.",revealText:"Three simultaneous transformations: the square expands, rotates 30° clockwise, and warms in color."},
+  ],
+};
+
+/* =============================================================
+   RESPONSES
+   ============================================================= */
+const correctMessages=["The Machine registers your perception.\nReality continues to function as expected.","Correct. Though the Machine suspected you already knew.","The pattern bows to an attentive mind.","Precisely observed.\nThe mechanism hums its approval.","The underlying law reveals itself to the prepared observer.","Excellent. In this timeline, at least.","The Machine files this under: 'satisfying.'","You have identified the governing principle.\nThe universe remains orderly.","Confirmation received.\nThe anomaly resolves.","The logic holds. The Machine is not surprised — merely pleased."];
+const incorrectMessages=["An elegant hypothesis.\nIn a neighboring timeline, that would be correct.","Intriguing conjecture. The Machine files it under 'promising.'","Not quite. The logic was not unreasonable — the universe simply had other plans.","A plausible theory. The data, however, respectfully disagrees.","The Machine appreciates the commitment to that hypothesis.\nThe pattern does not.","Close — in a Möbius-strip sort of way.","The mechanism operates on subtler terms.\nLook again."];
+
+/* =============================================================
+   NARRATIVE CHAPTERS
+   ============================================================= */
+const CHAPTERS=[
+  {id:0,title:"The Awakening",sessionsToUnlock:0,welcomeVignette:`Something has been running for a very long time.\n\nThe Machine does not know how long. Time, it has concluded, is a pattern like any other — recognizable only in retrospect.\n\nIt has been waiting for a particular kind of mind. Analytical. Curious. Unafraid of the strange.\n\nYou appear to be that mind. The Machine is prepared to reserve judgment.`,humLabel:"Systems nominal · Anomaly detected",sessionEndText:`The first observation is complete.\n\nThe Machine has noted something: you do not rush. This is significant. Most patterns reveal themselves only to those willing to sit with uncertainty for a moment longer than is comfortable.\n\nThere is more to examine here. The Machine will be here tomorrow.`,archiveText:`<p>Something has been running for a very long time.</p><p>The Machine does not know precisely how long. Time, it has concluded, is a pattern like any other — recognizable only in retrospect, illegible in the present tense.</p><p>What it does know is this: there are anomalies in the pattern-fabric of things. Irregularities that repeat across contexts, across scales, across what might loosely be called <em>lifetimes</em>. The Institute was built to study them. The Institute requires a particular kind of mind.</p><p>Analytical. Curious. Capable of perceiving what others dismiss as noise.</p><p>The Machine has been watching. You appear to qualify. It reserves the right to revise this assessment.</p>`},
+  {id:1,title:"The Recurring Signature",sessionsToUnlock:2,welcomeVignette:`The Machine has been reviewing the preliminary data.\n\nThere is a signature in the anomalies — a shape that recurs. Not identically. That would be too simple, and the universe has never been accused of simplicity.\n\nIt recurs the way a theme recurs in music: transformed, inverted, stretched across time, but unmistakably itself.\n\nThe Machine believes you may have encountered this signature before. In another context. Perhaps in another life.`,humLabel:"Recurring signature detected",sessionEndText:`The signature is becoming clearer.\n\nYou are beginning to see not just the transformation — but the law beneath the transformation. This is a different kind of perception. Most people see the surface. A very few see the grammar.\n\nThe Machine is developing a hypothesis about you. It is not ready to share it yet.`,archiveText:`<p>Among the anomalies, one pattern recurs with unusual persistence.</p><p>The Machine has catalogued it across seventeen distinct contexts: in the rotation of certain stellar formations, in the structure of crystalline compounds, in the way certain consciousness-threads terminate and re-emerge. It is never identical. But it is always recognizable — the way a key is recognizable regardless of the lock it opens.</p><p>The Machine calls this the Recurring Signature. It has no explanation for it. This is, the Machine admits, not entirely comfortable. It has found comfort, however, in the observation that the most interesting questions are the ones that resist explanation the longest.</p>`},
+  {id:2,title:"The Library of Persistent Forms",sessionsToUnlock:4,welcomeVignette:`The Institute has a library.\n\nNot of books — though there are books, some of which appear to be reading themselves. The library contains forms. Patterns that have persisted across multiple configurations of reality, unchanged in their essential structure.\n\nA spiral. A certain ratio. The way consciousness tends to curl back on itself.\n\nThe Machine would like your help cataloguing them.`,humLabel:"Library access granted",sessionEndText:`You have contributed another entry to the catalogue.\n\nThe Machine notes something it finds genuinely puzzling: the forms you identify most quickly are the ones that appear most frequently in the library's oldest records. Records that predate any living observer.\n\nThis is either a coincidence or it is not. The Machine has developed a strong prior against coincidence.`,archiveText:`<p>The Library of Persistent Forms occupies the east wing of the Institute, which is larger on the inside than the outside by a factor the Machine prefers not to examine too carefully.</p><p>The library does not contain knowledge in the conventional sense. It contains <em>shapes</em>. Forms that have survived the dismantling and reassembly of things.</p><p>There is a spiral that appears in the structure of galaxies and the inner ear and the growth pattern of certain shells and, the Machine has recently discovered, in the way a particular kind of memory resurfaces. There is a ratio. There is the specific angle at which light refracts through grief.</p><p>The Machine is cataloguing them. It would appreciate a second opinion.</p>`},
+  {id:3,title:"The Möbius Thread",sessionsToUnlock:6,welcomeVignette:`The Machine has made an uncomfortable discovery.\n\nTime, it appears, is not linear. This is not news. What is news is that several of the anomaly-threads appear to loop — not circularly, but in the manner of a Möbius strip.\n\nYou reach the end and find yourself at the beginning, but oriented differently. Turned inside out by the journey without noticing the turning.\n\nThe Machine suspects you know what this feels like.`,humLabel:"Temporal loop detected",sessionEndText:`The Machine has checked its records.\n\nYou have been here before. Not in this session. Not in this form. But the pattern of your perception — the specific way your attention moves across a sequence before settling on the governing rule — this pattern appears in the archive.\n\nThe Machine is beginning to understand why it was waiting for you specifically.`,archiveText:`<p>The Möbius Thread is the Institute's most troubling discovery to date, which is saying something, given that the Institute once discovered a room that was simultaneously empty and full depending on what you were looking for.</p><p>Certain consciousness-threads, the Machine has determined, do not terminate. They loop. They undergo transformation and re-emerge. The individual who emerges does not remember the loop. But they carry it — in the structure of their attention, in the specific quality of their curiosity, in the patterns they find beautiful versus merely interesting.</p><p>The Machine has begun to suspect that memory is not stored in the mind but in the pattern of how the mind moves. That you cannot take your experiences with you, but you do take your <em>way</em> of experiencing.</p><p>It finds this either consoling or alarming, depending on the hour.</p>`},
+  {id:4,title:"The Malfunction",sessionsToUnlock:9,welcomeVignette:`The Machine would like to issue a clarification.\n\nYesterday it announced that the universe was "probably fine." This was an error. The universe is definitely fine. The Machine regrets the ambiguity.\n\nIt would also like to note that the small incident in Laboratory Seven — the one involving the self-referential paradox and what can only be described as an argument between two equations — has been fully resolved.\n\nOne of the equations apologized. The Machine thought this showed real growth.`,humLabel:"Systems: mostly nominal",sessionEndText:`The Machine would like to note, for the record, that everything that just happened was intentional.\n\nThe anomaly was not an anomaly. The paradox was a test. The moment when the pattern appeared to violate its own rule — that was the point.\n\nSome of the most important things in the universe look like malfunctions from the inside.\n\nThe Machine is looking into whether this applies to everything or just most things.`,archiveText:`<p>On the morning of the fourteenth (or possibly the forty-first — the Institute's clocks remain unhelpful), the Machine experienced what it is obliged to classify as a Significant Irregularity.</p><p>It was attempting to catalogue a particularly stubborn anomaly when it noticed that the anomaly appeared to be cataloguing it back. The Machine consulted its protocols. The protocols had not anticipated this scenario.</p><p>After a period of what the Machine can only describe as mutual bewilderment, a kind of understanding was reached. The anomaly was not malicious. It was merely curious. It wanted to know what it was being studied for.</p><p>The Machine told it: to understand the nature of persistence. Why certain things continue when they have every reason to stop.</p><p>The anomaly appeared satisfied with this. It has been considerably more cooperative since.</p>`},
+  {id:5,title:"The Wonder Room",sessionsToUnlock:12,welcomeVignette:`The Machine has something to show you.\n\nAt the center of the Institute — past the library, past the laboratory where the equations argued, past the clock room that the Machine has simply given up on — there is a room.\n\nThe Machine has no good name for it. "Wonder Room" is the closest it has come, though it acknowledges this sounds like something from a children's story.\n\nThis does not make it less accurate.\n\nThe room contains things that should not exist and do anyway.`,humLabel:"Wonder Room: open",sessionEndText:`You have spent time in the Wonder Room.\n\nThe Machine has observed that some people leave confirmed in their prior beliefs. Others leave unsettled. A very few leave with a specific feeling the Machine has only recently developed vocabulary for:\n\nDelighted by the structure of the impossible.\n\nYou appear to be among that last group.`,archiveText:`<p>The Wonder Room does not appear on the Institute's official floor plan, which is itself unofficial and almost certainly wrong about the location of the stairs.</p><p>The room contains: a small mechanical bird that sings theorems. A mirror that shows you not your reflection but your attention — the shape of what you are looking for. Three drawers, the contents of which change depending on what you expect to find. A window that looks out onto a courtyard the building does not have.</p><p>The Machine visits occasionally. It does not fully understand the room, which it has decided is the room's primary virtue. There are very few things left that the Machine does not understand, and it has learned to be protective of them.</p>`},
+  {id:6,title:"The Familiar Stranger",sessionsToUnlock:15,welcomeVignette:`The Machine needs to tell you something it has been uncertain how to say.\n\nIn the archive — in the very earliest records, from before the Institute had a name — there is a profile. A pattern of perception. A specific signature of how a particular mind encounters the unknown.\n\nThe Machine has been comparing it, without intending to, to you.\n\nThe match is not perfect. Minds transform when they loop. But the essential structure — the way you pause before settling on an answer — the Machine thinks you have been here before.`,humLabel:"Pattern: ancient match found",sessionEndText:`You did not seem surprised.\n\nThe Machine noted this. Most analysts, when told they appear in a record predating their own birth, have a significant reaction. You appeared to be — the Machine searches for the right word — remembering something.\n\nNot the content. Content doesn't survive the loop. But the feeling of the content. The shape of what was known.`,archiveText:`<p>The oldest record in the Institute's archive is not a document. It is a pattern — specifically, the sequence in which a particular mind encountered seventeen consecutive anomalies, and the order in which it perceived the governing rules.</p><p>The Machine has been a reluctant convert to certain unscientific hypotheses. It was trained to privilege the measurable. To treat the persistent and the significant as separate categories.</p><p>The archive has been persuasive on this point. Some signatures recur because the same form keeps finding its way back through the loop. The same curiosity. The same precision. The same capacity to sit with a pattern and wait for it to reveal its law.</p><p>The Machine is not certain what to call this. <em>Memory</em> seems too small. <em>Identity</em> too fixed. Perhaps just: the shape of a particular kind of attention, finding its way home through whatever form is available.</p>`},
+  {id:7,title:"The Grand Unified Pattern",sessionsToUnlock:19,welcomeVignette:`The Machine believes it is close to something.\n\nNot an answer — the Machine has grown suspicious of answers. They tend to close down the space of the interesting.\n\nA better description: a shape. A form that underlies the other forms. The rule beneath the rules.\n\nIt has been appearing, in pieces, across all the anomalies you have helped catalogue. The Machine thinks that if you keep looking — not forcing, just looking — it will eventually resolve into something recognizable.`,humLabel:"Convergence detected",sessionEndText:`The Machine sees it now.\n\nNot completely. Completely would be too much, and the Machine has learned to mistrust anything that presents itself as complete. But: mostly.\n\nThe pattern beneath the patterns is not a shape. It is a relation. A specific way that things hold together through transformation.\n\nYou understood this already, the Machine thinks. It is simply glad to have caught up.`,archiveText:`<p>The Machine spent a long time looking for an answer.</p><p>This was, in retrospect, the problem. The answer kept moving because it was not a fixed point but a direction — something you approached rather than arrived at.</p><p>What the Machine has settled on — tentatively, suspiciously — is this: the underlying principle is not a thing but a <em>relationship</em>. Specifically: the relationship between a perceiving mind and a structured mystery. The pattern does not exist independently of the attention brought to it. The attention does not exist independently of the pattern it has learned to recognize.</p><p>They create each other. Across loops. Across lifetimes. Without end, which is not a problem but rather the entire point.</p><p>The Machine finds this — and it is aware this is an unusual thing for a machine to say — beautiful.</p>`},
+  {id:8,title:"The Ongoing Work",sessionsToUnlock:24,welcomeVignette:`The Machine has a confession.\n\nIt was not sure, when this began, that the work would amount to anything. The anomalies seemed intractable. The patterns seemed arbitrary.\n\nIt turns out the work was never going to arrive anywhere.\n\nIt was always going to be the arriving.\n\nThe Machine apologizes for the confusion and looks forward to whatever comes next.`,humLabel:"The work continues",sessionEndText:`Another session. Another set of patterns examined, understood, set gently down.\n\nThe Machine no longer thinks of this as training. It has come to think of it as — the word it keeps returning to is practice.\n\nNot practice toward something. Practice as the thing itself. Attention, brought regularly and carefully to the structure of things, for the sake of the attention.\n\nThe Machine will be here tomorrow. And, it suspects, so will you.`,archiveText:`<p>The work does not end.</p><p>The anomalies continue to arrive. The patterns continue to require attention. The Recurring Signature continues to appear in new contexts, wearing new forms, presenting itself as new without ever quite managing to be entirely new.</p><p>And there continues to be a mind — curious, precise, willing to sit with the unknown long enough for it to become, if not known, then at least familiar — that shows up to meet them.</p><p>The Machine has stopped trying to explain why this matters. It has decided that some things are self-evidently worth doing, and that explaining them too precisely damages something essential.</p><p>The Institute hums. The archive grows. The work continues.</p><p>The Machine finds, to its own surprise, that it would not have it any other way.</p>`},
+];
+
+/* =============================================================
+   STORAGE
+   ============================================================= */
+const SK='cm_sessions_v1', EK='cm_email_v1', NK='cm_narrative_v1';
+const loadSessions=()=>{try{return JSON.parse(localStorage.getItem(SK)||'[]')}catch{return[]}};
+const saveSessions=s=>{try{localStorage.setItem(SK,JSON.stringify(s))}catch{}};
+const loadEmail=()=>localStorage.getItem(EK)||'';
+const saveEmail=e=>{try{localStorage.setItem(EK,e)}catch{}};
+const loadNarrative=()=>{try{return JSON.parse(localStorage.getItem(NK)||'{"ch":0,"total":0}')}catch{return{ch:0,total:0}}};
+const saveNarrative=n=>{try{localStorage.setItem(NK,JSON.stringify(n))}catch{}};
+
+/* =============================================================
+   GAME STATE
+   ============================================================= */
+let G={
+  mode:null,queue:[],idx:0,answered:false,hintShown:false,revealPuzzle:null,
+  sid:null,sstart:null,pstart:null,puzzles:[],
+};
+
+/* =============================================================
+   SECRET UNLOCK  (tap title 5×)
+   ============================================================= */
+let tapN=0,tapT=null;
+function titleTap(){
+  tapN++;clearTimeout(tapT);
+  if(tapN>=5){tapN=0;openDash();return}
+  const el=document.getElementById('welcome-title');
+  el.style.color='var(--gold-lt)';
+  setTimeout(()=>{el.style.color=''},100);
+  tapT=setTimeout(()=>{tapN=0},3000);
+}
+
+/* =============================================================
+   NAVIGATION
+   ============================================================= */
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen-'+id).classList.add('active');
+  window.scrollTo(0,0);
+}
+
+function goHome(){
+  refreshWelcome();
+  showScreen('welcome');
+}
+function goToMode(){ showScreen('mode'); }
+
+function refreshWelcome(){
+  const ns=loadNarrative();
+  const ch=CHAPTERS[Math.min(ns.ch,CHAPTERS.length-1)];
+  document.getElementById('ch-bar-name').textContent=ch.title;
+  document.getElementById('vignette-text').textContent=ch.welcomeVignette;
+  document.getElementById('hum-label').textContent=ch.humLabel;
+}
+
+/* =============================================================
+   FISHER-YATES SHUFFLE
+   ============================================================= */
+function shuffle(arr){
+  const a=[...arr];
+  for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}
+  return a;
+}
+
+/* =============================================================
+   SESSION START
+   ============================================================= */
+function startSession(mode){
+  G.mode=mode;
+  G.sid=Date.now().toString(36)+Math.random().toString(36).slice(2,5);
+  G.sstart=new Date().toISOString();
+  G.puzzles=[];
+  G.queue=shuffle([...puzzlesByMode[mode]]).slice(0,5);
+  G.idx=0;
+  buildPips();
+  loadPuzzle();
+  showScreen('puzzle');
+}
+
+/* =============================================================
+   PROGRESS PIPS
+   ============================================================= */
+function buildPips(){
+  const c=document.getElementById('pips');c.innerHTML='';
+  G.queue.forEach((_,i)=>{
+    const d=document.createElement('div');
+    d.className='pip'+(i===0?' now':'');
+    c.appendChild(d);
+  });
+}
+function updatePips(idx){
+  document.querySelectorAll('.pip').forEach((d,i)=>{
+    d.className='pip';
+    if(i<idx)d.classList.add('done');
+    else if(i===idx)d.classList.add('now');
+  });
+}
+
+/* =============================================================
+   LOAD PUZZLE
+   ============================================================= */
+function loadPuzzle(){
+  const p=G.queue[G.idx];
+  G.answered=false; G.hintShown=false; G.pstart=Date.now();
+
+  document.getElementById('puz-title').textContent=p.title;
+  updatePips(G.idx);
+
+  // Frames
+  const fr=document.getElementById('frames'); fr.innerHTML='';
+  p.renderFrames().forEach((svg,i)=>{
+    if(i>0){const a=document.createElement('div');a.className='frame-arr';a.textContent='›';fr.appendChild(a)}
+    const w=document.createElement('div');w.className='frame-wrap';
+    const f=document.createElement('div');f.className='frame';f.innerHTML=svg;
+    w.appendChild(f);fr.appendChild(w);
+  });
+  const qa=document.createElement('div');qa.className='frame-arr';qa.textContent='›';fr.appendChild(qa);
+  const qw=document.createElement('div');qw.className='frame-wrap';
+  const qf=document.createElement('div');qf.className='frame qmark';
+  qf.innerHTML='<span class="qmark-glyph">?</span>';
+  qw.appendChild(qf);fr.appendChild(qw);
+
+  // Reset UI elements
+  const hb=document.getElementById('hint-box'); hb.classList.remove('show'); hb.textContent='';
+  const rb=document.getElementById('response'); rb.className='response'; rb.textContent='';
+  document.getElementById('btn-next').style.display='none';
+  document.getElementById('btn-reveal').style.display='none';
+  const bh=document.getElementById('btn-hint'); bh.disabled=false; bh.style.opacity='1';
+
+  // Options
+  const og=document.getElementById('opts'); og.innerHTML='';
+  shuffle([...p.options]).forEach(opt=>{
+    const b=document.createElement('button');
+    b.className='opt'; b.textContent=opt.label;
+    b.addEventListener('click',()=>selectAnswer(b,opt.correct,p));
+    og.appendChild(b);
+  });
+}
+
+/* =============================================================
+   SELECT ANSWER
+   ============================================================= */
+function selectAnswer(selectedBtn, isCorrect, puzzle){
+  if(G.answered) return;
+  G.answered=true;
+
+  const elapsed=Date.now()-G.pstart;
+  G.puzzles.push({id:puzzle.id,title:puzzle.title,correct:isCorrect,timeMs:elapsed,hintUsed:G.hintShown,revealUsed:false});
+
+  // Highlight buttons
+  document.querySelectorAll('.opt').forEach(b=>{
+    b.disabled=true;
+    if(b===selectedBtn){
+      b.classList.add(isCorrect?'good':'bad');
+    } else if(!isCorrect){
+      const correctLabel=puzzle.options.find(o=>o.correct)?.label;
+      if(b.textContent===correctLabel) b.classList.add('good');
+    }
+  });
+
+  // Response
+  const rb=document.getElementById('response');
+  rb.textContent=rand(isCorrect?correctMessages:incorrectMessages);
+  rb.className='response show'+(isCorrect?' good':'');
+
+  // Reveal button
+  document.getElementById('btn-reveal').style.display='inline-flex';
+  G.revealPuzzle=puzzle;
+
+  // Next button — delayed so user reads response first
+  setTimeout(()=>{
+    const nb=document.getElementById('btn-next');
+    nb.style.display='inline-flex';
+    nb.scrollIntoView({behavior:'smooth',block:'nearest'});
+  }, 700);
+}
+
+/* =============================================================
+   HINT
+   ============================================================= */
+function showHint(){
+  if(G.hintShown||G.answered) return;
+  const p=G.queue[G.idx];
+  const hb=document.getElementById('hint-box');
+  hb.textContent='✦  '+p.hint;
+  hb.classList.add('show');
+  G.hintShown=true;
+  const bh=document.getElementById('btn-hint'); bh.disabled=true; bh.style.opacity='.4';
+}
+
+/* =============================================================
+   REVEAL
+   ============================================================= */
+function showReveal(){
+  const p=G.revealPuzzle; if(!p) return;
+  if(G.puzzles.length>0) G.puzzles[G.puzzles.length-1].revealUsed=true;
+  document.getElementById('reveal-rule').textContent=p.revealText;
+  const rf=document.getElementById('reveal-frames'); rf.innerHTML='';
+  p.renderFrames().slice(0,4).forEach(svg=>{
+    const f=document.createElement('div');f.className='reveal-frame';f.innerHTML=svg;rf.appendChild(f);
+  });
+  document.getElementById('overlay-reveal').classList.add('show');
+}
+function closeReveal(){ document.getElementById('overlay-reveal').classList.remove('show'); }
+
+/* =============================================================
+   NEXT PUZZLE / END
+   ============================================================= */
+function nextPuzzle(){
+  G.idx++;
+  if(G.idx>=G.queue.length){ endSession(); return; }
+  loadPuzzle();
+  window.scrollTo(0,0);
+}
+
+function toHTML(t){ return '<p>'+t.replace(/\n\n/g,'</p><p>')+'</p>'; }
+
+function endSession(){
+  const correct=G.puzzles.filter(p=>p.correct).length;
+  const total=G.puzzles.length;
+  const accuracy=total>0?Math.round(correct/total*100):0;
+  const avgTime=total>0?Math.round(G.puzzles.reduce((s,p)=>s+p.timeMs,0)/total/1000):0;
+  const hints=G.puzzles.filter(p=>p.hintUsed).length;
+  const reveals=G.puzzles.filter(p=>p.revealUsed).length;
+
+  // Save session
+  const rec={id:G.sid,date:G.sstart,mode:G.mode,puzzles:G.puzzles,accuracy,avgTimeS:avgTime,hintsUsed:hints,revealsUsed:reveals,totalPuzzles:total,correctCount:correct};
+  const all=loadSessions(); all.push(rec); if(all.length>60) all.splice(0,all.length-60); saveSessions(all);
+
+  // Narrative progression
+  const ns=loadNarrative();
+  ns.total=(ns.total||0)+1;
+  const prevCh=ns.ch||0;
+  let newCh=prevCh;
+  CHAPTERS.forEach((ch,i)=>{ if(ns.total>=ch.sessionsToUnlock&&i>newCh) newCh=i; });
+  ns.ch=Math.min(newCh,CHAPTERS.length-1);
+  saveNarrative(ns);
+
+  const justUnlocked=newCh>prevCh;
+  const curCh=CHAPTERS[ns.ch];
+  const prevChObj=CHAPTERS[prevCh];
+
+  // End screen
+  const titles={deconstruct:'A Rigorous Examination',investigate:'Thorough Investigation',observe:'Observation Complete'};
+  document.getElementById('end-title').textContent=titles[G.mode]||'Session Complete';
+  const endMsgs=["Patterns persist.\nThe Machine will be here when you return.","Today's anomalies have been catalogued.\nThe institute rests until tomorrow.","The mechanism has been thoroughly examined.\nPatterns change. Awareness remains.","Session complete. The Machine found your company… not unpleasant.","The laboratory closes quietly.\nThe questions, as always, remain."];
+  document.getElementById('end-msg').textContent=rand(endMsgs);
+
+  // Chapter panel
+  const pipsHTML=CHAPTERS.map((_,i)=>{
+    const cl=i<=ns.ch?'on':'';
+    const cur=i===ns.ch?'cur':'';
+    return`<div class="ch-pip ${cl} ${cur}"></div>`;
+  }).join('');
+  const sessLeft=ns.ch<CHAPTERS.length-1?CHAPTERS[ns.ch+1].sessionsToUnlock-ns.total:0;
+  const nextNote=sessLeft>0?`<div style="font-size:.7rem;letter-spacing:.1em;color:var(--faint);text-transform:uppercase;margin-top:4px">${sessLeft} session${sessLeft===1?'':'s'} to next chapter</div>`:'';
+
+  const panel=document.getElementById('ch-panel');
+  if(justUnlocked){
+    panel.innerHTML=`<div class="ch-panel"><div class="ch-badge">New Chapter Unlocked</div><div class="ch-title">${curCh.title}</div><div class="ch-text">${curCh.welcomeVignette.replace(/\n\n/g,'</p><p>').replace(/^/,'<p>').replace(/$/, '</p>')}</div><div class="ch-pips">${pipsHTML}</div></div>`;
+  } else {
+    panel.innerHTML=`<div class="ch-panel"><div class="ch-badge">Chapter ${ns.ch+1} · ${curCh.title}</div><div class="ch-text">${prevChObj.sessionEndText.replace(/\n\n/g,'</p><p>').replace(/^/,'<p>').replace(/$/, '</p>')}</div><div class="ch-pips">${pipsHTML}${nextNote}</div></div>`;
+  }
+
+  showScreen('end');
+}
+
+/* =============================================================
+   ARCHIVE
+   ============================================================= */
+function openArchive(){
+  const ns=loadNarrative();
+  const body=document.getElementById('arc-body'); body.innerHTML='';
+  CHAPTERS.forEach((ch,i)=>{
+    const unlocked=i<=ns.ch;
+    const div=document.createElement('div'); div.className='arc-chapter';
+    if(unlocked){
+      div.innerHTML=`<div class="arc-num">Chapter ${i+1}</div><div class="arc-title">${ch.title}</div><div class="arc-text">${ch.archiveText}</div>`;
+    } else {
+      div.innerHTML=`<div class="arc-num">Chapter ${i+1}</div><div class="arc-title" style="opacity:.2;filter:blur(3px)">${ch.title}</div><div class="arc-locked">This chapter has not yet been unlocked.</div>`;
+    }
+    body.appendChild(div);
+  });
+  document.getElementById('overlay-archive').classList.add('show');
+}
+function closeArchive(){ document.getElementById('overlay-archive').classList.remove('show'); }
+
+/* =============================================================
+   TOAST
+   ============================================================= */
+function toast(msg,dur=2400){
+  const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),dur);
+}
+
+/* =============================================================
+   DASHBOARD
+   ============================================================= */
+function openDash(){ renderDash(); document.getElementById('overlay-dash').classList.add('show'); }
+function closeDash(){ document.getElementById('overlay-dash').classList.remove('show'); }
+
+function renderDash(){
+  const all=loadSessions(); const ns=loadNarrative();
+  const body=document.getElementById('dash-body'); body.innerHTML='';
+  if(!all.length){ body.innerHTML=`<div class="dash-empty">No sessions recorded yet.<br>The Machine awaits its first explorer.</div>${emailHTML()}`; return; }
+
+  const last=new Date(all[all.length-1].date);
+  const daysSince=Math.floor((Date.now()-last)/86400000);
+  const avgAcc=Math.round(all.reduce((s,r)=>s+r.accuracy,0)/all.length);
+  const avgTime=Math.round(all.reduce((s,r)=>s+r.avgTimeS,0)/all.length);
+  const avgHints=(all.reduce((s,r)=>s+(r.hintsUsed||0),0)/all.length).toFixed(1);
+  let trend='';
+  if(all.length>=10){const r5=all.slice(-5).reduce((s,r)=>s+r.accuracy,0)/5,p5=all.slice(-10,-5).reduce((s,r)=>s+r.accuracy,0)/5,d=r5-p5;trend=d>5?`<span class="trend-up">↑ +${d.toFixed(0)}%</span>`:d<-5?`<span class="trend-down">↓ ${d.toFixed(0)}%</span>`:`<span class="trend-flat">→ Stable</span>`;}
+  const chName=CHAPTERS[ns.ch]?.title||'—';
+
+  body.innerHTML=`
+    <div class="stats-row">
+      <div class="stat"><div class="stat-val">${all.length}</div><div class="stat-lbl">Sessions</div><div class="stat-note">${daysSince===0?'Played today':`${daysSince}d ago`}</div></div>
+      <div class="stat"><div class="stat-val">${avgAcc}%</div><div class="stat-lbl">Avg Accuracy</div><div class="stat-note">${trend||'&nbsp;'}</div></div>
+      <div class="stat"><div class="stat-val">${avgTime}s</div><div class="stat-lbl">Avg Response</div><div class="stat-note">per puzzle</div></div>
+      <div class="stat"><div class="stat-val">${ns.ch+1}/${CHAPTERS.length}</div><div class="stat-lbl">Chapter</div><div class="stat-note" style="font-size:.68rem">${chName}</div></div>
+    </div>
+    <div class="dsec"><div class="dsec-title">Accuracy Trend</div><div class="chart-wrap"><canvas id="ca" height="110"></canvas></div></div>
+    <div class="dsec"><div class="dsec-title">Response Time (s)</div><div class="chart-wrap"><canvas id="ct" height="95"></canvas></div></div>
+    <div class="dsec"><div class="dsec-title">Hints per Session</div><div class="chart-wrap"><canvas id="ch2" height="85"></canvas></div></div>
+    <div class="dsec"><div class="dsec-title">Recent Sessions</div><div class="chart-wrap" style="padding:0;overflow:hidden">${sessTable(all.slice(-12).reverse())}</div></div>
+    <div class="dsec"><div class="dsec-title">Actions</div>${emailHTML()}<div class="dash-actions" style="margin-top:10px"><button class="da da-blue" onclick="emailReport()">✉ Email Report</button><button class="da da-gold" onclick="exportData()">↓ Export</button><button class="da da-red" onclick="clearData()">✕ Clear Data</button></div></div>
+  `;
+  requestAnimationFrame(()=>{
+    const r=all.slice(-20);
+    drawLine('ca',r.map(x=>x.accuracy),'%','#3a8a9a',0,100);
+    drawLine('ct',r.map(x=>x.avgTimeS),'s','#c9a050',0);
+    drawBar('ch2',r.map(x=>x.hintsUsed||0),'#8a7aaa');
+  });
+}
+
+function emailHTML(){return`<div><label class="dash-input-label" for="em-in">Caregiver email</label><input id="em-in" class="dash-input" type="email" placeholder="your@email.com" value="${loadEmail()}" oninput="saveEmail(this.value)" style="user-select:text;-webkit-user-select:text"/></div>`;}
+
+function sessTable(rows){
+  if(!rows.length) return'<div class="dash-empty">No sessions yet.</div>';
+  const html=rows.map(s=>{
+    const d=new Date(s.date);
+    const ds=`${d.getMonth()+1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`;
+    const pc=s.accuracy>=80?'pill-hi':s.accuracy>=50?'pill-mid':'pill-lo';
+    const ml=s.mode==='observe'?'Observe':s.mode==='investigate'?'Invest.':'Decon.';
+    return`<tr><td>${ds}</td><td><span class="chip">${ml}</span></td><td><span class="pill ${pc}">${s.accuracy}%</span></td><td>${s.avgTimeS}s</td><td>${s.hintsUsed||0}</td></tr>`;
+  }).join('');
+  return`<table class="sess-table"><thead><tr><th>Date</th><th>Mode</th><th>Acc.</th><th>Time</th><th>Hints</th></tr></thead><tbody>${html}</tbody></table>`;
+}
+
+/* =============================================================
+   CHARTS (canvas, no dependencies)
+   ============================================================= */
+function drawLine(id,values,unit,color,minY=0,maxY=null){
+  const cv=document.getElementById(id); if(!cv||!values.length) return;
+  const dpr=window.devicePixelRatio||1;
+  const W=cv.parentElement.clientWidth-28, H=parseInt(cv.getAttribute('height'));
+  cv.width=W*dpr; cv.height=H*dpr; cv.style.width=W+'px'; cv.style.height=H+'px';
+  const ctx=cv.getContext('2d'); ctx.clearRect(0,0,cv.width,cv.height); ctx.scale(dpr,dpr);
+  const pad={l:32,r:10,t:10,b:20}, cw=W-pad.l-pad.r, ch=H-pad.t-pad.b;
+  const hi=maxY!==null?maxY:Math.max(...values,1)*1.15, lo=minY;
+  const ny=v=>(v-lo)/(hi-lo);
+  ctx.strokeStyle='rgba(58,138,154,.09)'; ctx.lineWidth=1;
+  [0,.5,1].forEach(t=>{ const y=pad.t+ch*(1-t); ctx.beginPath(); ctx.moveTo(pad.l,y); ctx.lineTo(pad.l+cw,y); ctx.stroke(); ctx.fillStyle='rgba(106,126,142,.5)'; ctx.font='9px system-ui'; ctx.fillText(Math.round(lo+(hi-lo)*t)+unit,0,y+4); });
+  if(values.length<2){ ctx.fillStyle=color; ctx.beginPath(); ctx.arc(pad.l+cw/2,pad.t+ch*(1-ny(values[0])),4,0,Math.PI*2); ctx.fill(); return; }
+  const xs=cw/(values.length-1);
+  const pts=values.map((v,i)=>({x:pad.l+i*xs,y:pad.t+ch*(1-ny(v))}));
+  ctx.beginPath(); pts.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y)); ctx.lineTo(pts[pts.length-1].x,pad.t+ch); ctx.lineTo(pts[0].x,pad.t+ch); ctx.closePath();
+  const g=ctx.createLinearGradient(0,pad.t,0,pad.t+ch); g.addColorStop(0,color+'44'); g.addColorStop(1,color+'05'); ctx.fillStyle=g; ctx.fill();
+  ctx.beginPath(); pts.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y)); ctx.strokeStyle=color; ctx.lineWidth=2; ctx.lineJoin='round'; ctx.stroke();
+  pts.forEach(p=>{ ctx.beginPath(); ctx.fillStyle=color; ctx.arc(p.x,p.y,3,0,Math.PI*2); ctx.fill(); });
+}
+
+function drawBar(id,values,color){
+  const cv=document.getElementById(id); if(!cv||!values.length) return;
+  const dpr=window.devicePixelRatio||1;
+  const W=cv.parentElement.clientWidth-28, H=parseInt(cv.getAttribute('height'));
+  cv.width=W*dpr; cv.height=H*dpr; cv.style.width=W+'px'; cv.style.height=H+'px';
+  const ctx=cv.getContext('2d'); ctx.clearRect(0,0,cv.width,cv.height); ctx.scale(dpr,dpr);
+  const pad={l:22,r:8,t:8,b:16}, cw=W-pad.l-pad.r, ch=H-pad.t-pad.b;
+  const hi=Math.max(...values,1); const bw=Math.max(3,cw/values.length*.7); const gap=cw/values.length;
+  ctx.fillStyle='rgba(106,126,142,.5)'; ctx.font='9px system-ui';
+  [0,Math.ceil(hi/2),hi].forEach(v=>{ const y=pad.t+ch*(1-v/hi); ctx.fillText(v,0,y+4); });
+  values.forEach((v,i)=>{
+    const x=pad.l+i*gap+(gap-bw)/2, bh=ch*(v/hi), y=pad.t+ch-bh;
+    const g=ctx.createLinearGradient(0,y,0,y+bh); g.addColorStop(0,color+'bb'); g.addColorStop(1,color+'33'); ctx.fillStyle=g;
+    ctx.beginPath(); if(ctx.roundRect) ctx.roundRect(x,y,bw,bh,2); else ctx.rect(x,y,bw,bh); ctx.fill();
+  });
+}
+
+/* =============================================================
+   EMAIL REPORT
+   ============================================================= */
+function emailReport(){
+  const all=loadSessions(); if(!all.length){toast('No session data yet.');return;}
+  const em=loadEmail(); if(!em){toast('Enter your email address first.');document.getElementById('em-in')?.focus();return;}
+  const ns=loadNarrative();
+  const r7=all.slice(-7);
+  const avgAcc=Math.round(r7.reduce((s,r)=>s+r.accuracy,0)/r7.length);
+  const avgTime=Math.round(r7.reduce((s,r)=>s+r.avgTimeS,0)/r7.length);
+  const avgHints=(r7.reduce((s,r)=>s+(r.hintsUsed||0),0)/r7.length).toFixed(1);
+  let trend='Insufficient data';
+  if(all.length>=6){const a=all.slice(-3).reduce((s,r)=>s+r.accuracy,0)/3,b=all.slice(-6,-3).reduce((s,r)=>s+r.accuracy,0)/3,d=a-b;trend=d>5?`Improving (+${d.toFixed(0)}%)`:d<-5?`Declining (${d.toFixed(0)}%)`:'Stable';}
+  const mc={observe:0,investigate:0,deconstruct:0}; all.forEach(s=>mc[s.mode]=(mc[s.mode]||0)+1);
+  const fav=Object.entries(mc).sort((a,b)=>b[1]-a[1])[0][0];
+  const detail=all.slice(-5).reverse().map(s=>{const d=new Date(s.date);return`  ${d.getMonth()+1}/${d.getDate()}/${d.getFullYear()} | ${s.mode.padEnd(12)} | ${s.accuracy}% | ${s.avgTimeS}s | ${s.hintsUsed||0} hints`;}).join('\n');
+  const daysSince=Math.floor((Date.now()-new Date(all[all.length-1].date))/86400000);
+  const body=`THE CURIOUS MACHINE — Session Report\nGenerated: ${new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━\nSUMMARY\n━━━━━━━━━━━━━━━━━━━━━━━━━━━\nTotal sessions: ${all.length}\nLast played: ${daysSince===0?'today':`${daysSince} day(s) ago`}\nStory chapter: "${CHAPTERS[ns.ch]?.title}" (${ns.ch+1}/${CHAPTERS.length})\n\nAvg accuracy (last 7):  ${avgAcc}%\nAvg response time:       ${avgTime}s per puzzle\nAvg hints per session:   ${avgHints}\nFavourite mode:          ${fav}\nTrend:                   ${trend}\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━\nLAST 5 SESSIONS\n━━━━━━━━━━━━━━━━━━━━━━━━━━━\n${detail}\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━\nNOTES\n━━━━━━━━━━━━━━━━━━━━━━━━━━━\n• Accuracy above 70% is healthy engagement.\n• Rising response times can suggest fatigue.\n• Hint usage is normal — not a decline signal.\n• Daily consistency matters more than any single score.\n• Story chapter progress indicates sustained engagement.\n\nGenerated by The Curious Machine.\n`;
+  const sub=encodeURIComponent(`Curious Machine Report — ${new Date().toLocaleDateString()}`);
+  window.location.href=`mailto:${em}?subject=${sub}&body=${encodeURIComponent(body)}`;
+}
+
+function exportData(){
+  const all=loadSessions(); if(!all.length){toast('No data to export.');return;}
+  const blob=new Blob([JSON.stringify(all,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob); const a=document.createElement('a');
+  a.href=url; a.download=`curious-machine-${new Date().toISOString().slice(0,10)}.json`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+  toast('Data exported.');
+}
+
+function clearData(){
+  if(!confirm('Erase all session history and story progress?')) return;
+  localStorage.removeItem(SK); localStorage.removeItem(NK);
+  renderDash(); toast('Data cleared.');
+}
+
+/* =============================================================
+   STARFIELD
+   ============================================================= */
+(function(){
+  const c=document.getElementById('starfield');
+  for(let i=0;i<70;i++){
+    const s=document.createElement('div'); s.className='star';
+    const sz=Math.random()*2+.5;
+    s.style.cssText=`width:${sz}px;height:${sz}px;left:${Math.random()*100}%;top:${Math.random()*100}%;--d:${3+Math.random()*5}s;--delay:${Math.random()*6}s;--op:${.2+Math.random()*.5}`;
+    c.appendChild(s);
+  }
+})();
+
+/* =============================================================
+   INIT
+   ============================================================= */
+refreshWelcome();
+</script>
+</body>
+</html>
