@@ -1,0 +1,1083 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Curious Machine</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#090f1a;--card:#0e1928;--frame:#131f30;
+  --text:#e8dcc8;--dim:#6a7e8e;--faint:#3a4e5e;
+  --gold:#c9a050;--gold-lt:#e8c878;--gold-dk:#8a6030;
+  --teal:#3a8a9a;--teal-lt:#5aacbc;
+  --ok:#3a7a5a;--err:#6a3838;
+  --border:rgba(201,160,80,.18);--r:12px;--rs:8px;
+}
+body{background:var(--bg);color:var(--text);font-family:'Jost','Segoe UI',system-ui,sans-serif;font-size:16px;line-height:1.5;-webkit-tap-highlight-color:transparent;user-select:none;}
+#starfield{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;}
+.star{position:absolute;border-radius:50%;background:#fff;opacity:0;animation:twinkle var(--d,4s) infinite ease-in-out var(--delay,0s);}
+@keyframes twinkle{0%,100%{opacity:0}50%{opacity:var(--op,.4)}}
+.screen{display:none;position:relative;z-index:1;min-height:100svh;min-height:100vh;padding:24px 20px 40px;flex-direction:column;align-items:center;justify-content:center;}
+.screen.active{display:flex;animation:fadeIn .45s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.title{font-family:'Cormorant Garamond','Georgia',serif;font-weight:500;font-size:clamp(2rem,7vw,3.2rem);letter-spacing:.08em;color:var(--gold-lt);line-height:1.1;text-shadow:0 0 40px rgba(201,160,80,.2);cursor:default;}
+.subtitle{font-family:'Cormorant Garamond','Georgia',serif;font-style:italic;font-size:clamp(.9rem,2.5vw,1.1rem);color:var(--dim);letter-spacing:.04em;margin-top:6px;}
+.voice{font-family:'Cormorant Garamond','Georgia',serif;font-style:italic;font-size:clamp(1rem,2.6vw,1.15rem);color:var(--dim);line-height:1.8;text-align:center;}
+.label{font-size:.7rem;font-weight:500;letter-spacing:.2em;text-transform:uppercase;color:var(--faint);}
+.divider{width:100px;height:1px;background:linear-gradient(90deg,transparent,var(--gold-dk),transparent);margin:16px auto;}
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:52px;padding:12px 24px;border:1px solid var(--border);border-radius:var(--rs);background:var(--card);color:var(--text);font-family:'Jost','Segoe UI',system-ui,sans-serif;font-size:.95rem;font-weight:400;letter-spacing:.05em;cursor:pointer;transition:border-color .2s,color .2s,background .2s;text-align:center;touch-action:manipulation;}
+.btn:hover,.btn:active{border-color:var(--gold);color:var(--gold-lt);}
+.btn-primary{background:rgba(201,160,80,.08);border-color:var(--gold-dk);color:var(--gold-lt);font-weight:500;}
+.btn-primary:hover,.btn-primary:active{background:rgba(201,160,80,.16);border-color:var(--gold);}
+.btn-ghost{border-color:rgba(201,160,80,.1);color:var(--faint);font-size:.82rem;letter-spacing:.08em;min-height:44px;}
+.btn-ghost:hover,.btn-ghost:active{border-color:var(--gold-dk);color:var(--gold-dk);}
+.btn-teal{background:rgba(58,138,154,.1);border-color:rgba(58,138,154,.3);color:var(--teal-lt);}
+.btn-teal:hover,.btn-teal:active{background:rgba(58,138,154,.18);border-color:var(--teal);}
+/* WELCOME */
+#screen-welcome{text-align:center;gap:0;}
+.welcome-emblem{width:68px;height:68px;margin-bottom:14px;}
+.chapter-bar{display:flex;align-items:center;justify-content:center;gap:10px;margin:0 auto 18px;padding:10px 20px;max-width:440px;width:100%;border:1px solid rgba(201,160,80,.1);border-radius:var(--rs);background:rgba(201,160,80,.03);}
+.vignette{max-width:440px;width:100%;margin:0 auto 20px;padding:16px 20px;border-left:2px solid var(--gold-dk);background:rgba(201,160,80,.03);border-radius:0 var(--rs) var(--rs) 0;text-align:left;}
+.vignette-label{font-size:.64rem;letter-spacing:.18em;text-transform:uppercase;color:var(--gold-dk);margin-bottom:8px;}
+.vignette-text{font-family:'Cormorant Garamond','Georgia',serif;font-style:italic;font-size:clamp(.9rem,2.2vw,1.02rem);line-height:1.8;color:var(--dim);}
+.hum{display:flex;align-items:center;gap:8px;margin-bottom:20px;color:var(--faint);font-size:.75rem;letter-spacing:.12em;text-transform:uppercase;}
+.hum-dot{width:6px;height:6px;border-radius:50%;background:var(--gold);animation:pulse 2.2s infinite ease-in-out;}
+@keyframes pulse{0%,100%{opacity:.3;transform:scale(.8)}50%{opacity:1;transform:scale(1.2)}}
+.welcome-btns{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;}
+/* HUB */
+#screen-hub{gap:0;text-align:center;}
+.hub-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;width:100%;max-width:560px;margin:0 auto 20px;}
+.hub-card{padding:22px 18px;border:1px solid var(--border);border-radius:var(--r);background:var(--card);cursor:pointer;transition:border-color .22s,background .22s,transform .18s;text-align:left;touch-action:manipulation;}
+.hub-card:hover,.hub-card:active{border-color:var(--gold);background:var(--frame);transform:translateY(-2px);}
+.hub-icon{font-size:1.8rem;margin-bottom:10px;display:block;}
+.hub-name{font-family:'Cormorant Garamond','Georgia',serif;font-size:1.2rem;font-weight:500;color:var(--gold-lt);margin-bottom:5px;}
+.hub-desc{font-size:.78rem;color:var(--dim);line-height:1.5;font-weight:300;}
+/* BLACKJACK */
+#screen-bj{justify-content:flex-start;padding-top:20px;gap:0;width:100%;max-width:600px;}
+.bj-header{display:flex;align-items:center;justify-content:space-between;width:100%;margin-bottom:14px;}
+.bj-chips{font-family:'Cormorant Garamond','Georgia',serif;font-size:1.1rem;color:var(--gold-lt);}
+.bj-label{font-size:.68rem;letter-spacing:.15em;text-transform:uppercase;color:var(--faint);display:block;}
+.bj-zone{width:100%;padding:14px;border:1px solid var(--border);border-radius:var(--r);background:rgba(15,35,15,.5);margin-bottom:10px;}
+.bj-zone-label{font-size:.65rem;letter-spacing:.18em;text-transform:uppercase;color:var(--faint);margin-bottom:10px;}
+.bj-cards{display:flex;gap:8px;flex-wrap:wrap;align-items:center;min-height:90px;}
+.card{width:60px;height:88px;border-radius:7px;background:#f8f2e8;border:1px solid rgba(0,0,0,.15);display:flex;flex-direction:column;justify-content:space-between;padding:5px 6px;flex-shrink:0;box-shadow:0 3px 10px rgba(0,0,0,.5);animation:cardDeal .3s ease;}
+@keyframes cardDeal{from{opacity:0;transform:translateY(-12px) scale(.88)}to{opacity:1;transform:none}}
+.card-top{font-size:1.05rem;font-weight:700;line-height:1;}
+.card-suit{font-size:1.6rem;text-align:center;line-height:1;}
+.card-bot{font-size:1.05rem;font-weight:700;line-height:1;transform:rotate(180deg);}
+.card.red .card-top,.card.red .card-suit,.card.red .card-bot{color:#c02020;}
+.card.black .card-top,.card.black .card-suit,.card.black .card-bot{color:#1a1a1a;}
+.card.back{background:linear-gradient(135deg,#1a3a6a,#0d2040);border-color:rgba(201,160,80,.3);position:relative;}
+.card.back::after{content:'✦';color:var(--gold-dk);font-size:1.8rem;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);}
+.bj-total{font-family:'Cormorant Garamond','Georgia',serif;font-size:1.1rem;color:var(--gold-lt);margin-left:8px;}
+.bj-msg{width:100%;padding:12px 16px;border-radius:var(--rs);border:1px solid rgba(201,160,80,.15);background:rgba(201,160,80,.04);font-family:'Cormorant Garamond','Georgia',serif;font-style:italic;font-size:.98rem;color:var(--gold-dk);text-align:center;line-height:1.65;margin-bottom:10px;min-height:52px;white-space:pre-wrap;}
+.bj-actions{display:flex;gap:10px;flex-wrap:wrap;width:100%;justify-content:center;margin-bottom:8px;}
+.bj-bet-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:center;margin-bottom:10px;}
+.bet-chip{width:54px;height:54px;border-radius:50%;border:2px dashed var(--gold-dk);background:rgba(201,160,80,.08);color:var(--gold);font-size:.8rem;font-weight:600;cursor:pointer;transition:all .2s;touch-action:manipulation;font-family:'Jost','Segoe UI',system-ui,sans-serif;}
+.bet-chip:hover,.bet-chip:active{background:rgba(201,160,80,.2);border-style:solid;}
+.bj-bet-display{font-family:'Cormorant Garamond','Georgia',serif;font-size:1.2rem;color:var(--gold-lt);width:100%;text-align:center;margin-bottom:8px;}
+/* SHUFFLEBOARD */
+#screen-sb{justify-content:flex-start;padding-top:16px;gap:0;width:100%;max-width:400px;}
+.sb-header{display:flex;justify-content:space-between;align-items:center;width:100%;margin-bottom:10px;}
+.sb-score{font-family:'Cormorant Garamond','Georgia',serif;font-size:1.5rem;color:var(--gold-lt);}
+.sb-info{font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);}
+#sb-canvas{display:block;border-radius:var(--rs);touch-action:none;cursor:crosshair;margin:0 auto;}
+.sb-msg{width:100%;padding:11px 16px;border-radius:var(--rs);border:1px solid rgba(201,160,80,.15);background:rgba(201,160,80,.04);font-family:'Cormorant Garamond','Georgia',serif;font-style:italic;font-size:.95rem;color:var(--gold-dk);text-align:center;line-height:1.6;margin-top:10px;min-height:48px;white-space:pre-wrap;}
+/* LEXICON */
+#screen-lex{text-align:center;gap:0;width:100%;max-width:580px;}
+.lex-word{font-family:'Cormorant Garamond','Georgia',serif;font-size:clamp(2rem,7vw,3rem);font-weight:500;color:var(--gold-lt);letter-spacing:.06em;margin-bottom:4px;}
+.lex-pos{font-family:'Cormorant Garamond','Georgia',serif;font-style:italic;font-size:1rem;color:var(--faint);margin-bottom:18px;}
+.lex-opts{display:flex;flex-direction:column;gap:10px;width:100%;margin-bottom:12px;}
+.lex-opt{padding:14px 18px;border:1px solid var(--border);border-radius:var(--rs);background:var(--card);color:var(--text);font-family:'Cormorant Garamond','Georgia',serif;font-size:.98rem;line-height:1.55;cursor:pointer;transition:all .22s;text-align:left;touch-action:manipulation;}
+.lex-opt:hover:not(:disabled),.lex-opt:active:not(:disabled){border-color:var(--teal);background:rgba(58,138,154,.07);}
+.lex-opt:disabled{cursor:default;}
+.lex-opt.good{border-color:var(--ok)!important;background:rgba(58,122,90,.12)!important;color:#8ad0a8!important;}
+.lex-opt.bad{border-color:var(--err)!important;background:rgba(106,56,56,.12)!important;color:#d08080!important;}
+.lex-msg{padding:13px 16px;border-radius:var(--rs);border:1px solid rgba(201,160,80,.15);background:rgba(201,160,80,.04);font-family:'Cormorant Garamond','Georgia',serif;font-style:italic;font-size:.97rem;color:var(--gold-dk);line-height:1.7;text-align:center;margin-bottom:12px;white-space:pre-wrap;display:none;}
+.lex-msg.show{display:block;animation:fadeIn .4s ease;}
+/* JOKES */
+#screen-jokes{text-align:center;gap:0;width:100%;max-width:560px;}
+.joke-card{width:100%;padding:28px 24px;border:1px solid var(--border);border-radius:var(--r);background:var(--card);margin-bottom:14px;min-height:160px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;cursor:pointer;transition:border-color .2s;}
+.joke-card:hover,.joke-card:active{border-color:var(--gold-dk);}
+.joke-setup{font-family:'Cormorant Garamond','Georgia',serif;font-size:clamp(1.05rem,2.8vw,1.25rem);color:var(--text);line-height:1.7;text-align:center;}
+.joke-punchline{font-family:'Cormorant Garamond','Georgia',serif;font-style:italic;font-size:clamp(1rem,2.6vw,1.2rem);color:var(--gold-lt);line-height:1.7;display:none;text-align:center;animation:fadeIn .4s ease;}
+.joke-punchline.show{display:block;}
+.joke-tap-hint{font-size:.72rem;color:var(--faint);letter-spacing:.1em;text-transform:uppercase;}
+.joke-ratings{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:10px;}
+.rating-btn{min-height:52px;padding:12px 20px;border-radius:var(--rs);border:1px solid var(--border);background:var(--card);color:var(--dim);font-family:'Jost','Segoe UI',system-ui,sans-serif;font-size:.88rem;cursor:pointer;transition:all .2s;touch-action:manipulation;}
+.rating-btn:hover,.rating-btn:active{border-color:var(--gold);color:var(--gold-lt);}
+.joke-response{font-family:'Cormorant Garamond','Georgia',serif;font-style:italic;font-size:.95rem;color:var(--gold-dk);line-height:1.65;min-height:40px;padding:8px;display:none;text-align:center;}
+.joke-response.show{display:block;animation:fadeIn .4s ease;}
+/* END */
+#screen-end{text-align:center;gap:0;}
+.ch-panel{max-width:500px;width:100%;margin:18px auto 0;padding:22px 24px;border:1px solid rgba(201,160,80,.22);border-radius:var(--r);background:rgba(201,160,80,.04);text-align:left;animation:fadeIn .7s ease .3s both;}
+.ch-badge{font-size:.64rem;letter-spacing:.2em;text-transform:uppercase;color:var(--gold-dk);margin-bottom:9px;display:flex;align-items:center;gap:8px;}
+.ch-badge::before{content:'';width:18px;height:1px;background:var(--gold-dk);}
+.ch-title{font-family:'Cormorant Garamond','Georgia',serif;font-size:1.3rem;color:var(--gold-lt);margin-bottom:12px;}
+.ch-text{font-family:'Cormorant Garamond','Georgia',serif;font-style:italic;font-size:.98rem;line-height:1.85;color:var(--dim);}
+.ch-text em{color:var(--gold-dk);font-style:normal;}
+.ch-text p+p{margin-top:10px;}
+.ch-pips{display:flex;align-items:center;gap:8px;margin-top:14px;flex-wrap:wrap;}
+.ch-pip{width:10px;height:10px;border-radius:50%;border:1px solid var(--faint);background:transparent;transition:all .4s;}
+.ch-pip.on{background:var(--gold-dk);border-color:var(--gold);}
+.ch-pip.cur{background:var(--gold-lt);border-color:var(--gold-lt);box-shadow:0 0 7px rgba(232,200,120,.4);}
+/* OVERLAYS */
+.arc-overlay{position:fixed;inset:0;z-index:120;background:rgba(7,13,24,.97);display:none;flex-direction:column;}
+.arc-overlay.show{display:flex;}
+.arc-head{display:flex;align-items:center;justify-content:space-between;padding:18px 24px;border-bottom:1px solid rgba(201,160,80,.1);flex-shrink:0;}
+.arc-head-title{font-family:'Cormorant Garamond','Georgia',serif;font-size:1.4rem;color:var(--gold-lt);}
+.arc-body{flex:1;overflow-y:auto;padding:24px;display:flex;flex-direction:column;gap:28px;}
+.arc-chapter{max-width:580px;padding-left:20px;border-left:2px solid var(--gold-dk);}
+.arc-num{font-size:.63rem;letter-spacing:.2em;text-transform:uppercase;color:var(--gold-dk);margin-bottom:5px;}
+.arc-title{font-family:'Cormorant Garamond','Georgia',serif;font-size:1.25rem;color:var(--gold-lt);margin-bottom:12px;}
+.arc-text{font-family:'Cormorant Garamond','Georgia',serif;font-style:italic;font-size:.97rem;line-height:1.9;color:var(--dim);}
+.arc-text em{color:var(--gold-dk);font-style:normal;}
+.arc-text p+p{margin-top:11px;}
+.arc-locked{font-family:'Cormorant Garamond','Georgia',serif;font-style:italic;font-size:.97rem;color:var(--faint);filter:blur(2px);user-select:none;}
+.dash-overlay{position:fixed;inset:0;z-index:200;background:#070d18;display:none;flex-direction:column;}
+.dash-overlay.show{display:flex;}
+.dash-head{display:flex;align-items:center;justify-content:space-between;padding:18px 24px;border-bottom:1px solid rgba(58,138,154,.2);flex-shrink:0;}
+.dash-badge{padding:3px 9px;border-radius:3px;background:rgba(58,138,154,.1);border:1px solid rgba(58,138,154,.2);font-size:.63rem;letter-spacing:.2em;text-transform:uppercase;color:var(--teal);margin-right:10px;}
+.dash-head-title{font-family:'Cormorant Garamond','Georgia',serif;font-size:1.3rem;color:var(--dim);}
+.dash-body{flex:1;overflow-y:auto;padding:22px 24px;display:flex;flex-direction:column;gap:22px;}
+.stats-row{display:flex;gap:12px;flex-wrap:wrap;}
+.stat{flex:1;min-width:110px;padding:14px 16px;border:1px solid rgba(58,138,154,.2);border-radius:var(--r);background:#0c1622;}
+.stat-val{font-size:1.7rem;font-weight:600;color:var(--teal-lt);letter-spacing:-.02em;}
+.stat-lbl{font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);margin-top:3px;}
+.stat-note{font-size:.75rem;color:var(--dim);margin-top:5px;font-style:italic;}
+.dsec{display:flex;flex-direction:column;gap:9px;}
+.dsec-title{font-size:.68rem;letter-spacing:.2em;text-transform:uppercase;color:var(--faint);display:flex;align-items:center;gap:9px;}
+.dsec-title::after{content:'';flex:1;height:1px;background:rgba(58,138,154,.2);}
+.chart-wrap{border:1px solid rgba(58,138,154,.2);border-radius:var(--r);background:#0c1622;padding:14px;}
+.sess-table{width:100%;border-collapse:collapse;}
+.sess-table th{text-align:left;font-size:.66rem;letter-spacing:.15em;text-transform:uppercase;color:var(--faint);padding:7px 11px;border-bottom:1px solid rgba(58,138,154,.2);font-weight:400;}
+.sess-table td{padding:9px 11px;font-size:.8rem;color:var(--dim);border-bottom:1px solid rgba(58,138,154,.06);}
+.sess-table tr:last-child td{border-bottom:none;}
+.pill{display:inline-block;padding:2px 7px;border-radius:10px;font-size:.76rem;font-weight:500;}
+.pill-hi{background:rgba(58,122,90,.2);color:#6ad090;}
+.pill-mid{background:rgba(201,160,80,.15);color:var(--gold);}
+.pill-lo{background:rgba(106,56,56,.2);color:#d08080;}
+.chip-tag{display:inline-block;padding:2px 7px;border-radius:3px;font-size:.7rem;border:1px solid rgba(58,138,154,.2);color:var(--faint);}
+.dash-actions{display:flex;gap:10px;flex-wrap:wrap;}
+.da{flex:1;min-width:130px;min-height:48px;padding:11px 18px;border-radius:var(--rs);font-family:'Jost','Segoe UI',system-ui,sans-serif;font-size:.82rem;font-weight:500;cursor:pointer;letter-spacing:.05em;transition:all .2s;}
+.da-blue{background:rgba(58,138,154,.1);border:1px solid rgba(58,138,154,.25);color:var(--teal-lt);}
+.da-blue:hover,.da-blue:active{background:rgba(58,138,154,.18);border-color:var(--teal);}
+.da-gold{background:rgba(201,160,80,.06);border:1px solid rgba(201,160,80,.15);color:var(--gold-dk);}
+.da-gold:hover,.da-gold:active{background:rgba(201,160,80,.12);color:var(--gold);}
+.da-red{background:rgba(106,56,56,.1);border:1px solid rgba(106,56,56,.2);color:#9a5050;}
+.da-red:hover,.da-red:active{background:rgba(106,56,56,.18);color:#d08080;}
+.dash-input{width:100%;padding:11px 14px;background:#0c1622;border:1px solid rgba(58,138,154,.2);border-radius:var(--rs);color:var(--text);font-family:'Jost','Segoe UI',system-ui,sans-serif;font-size:.88rem;outline:none;transition:border-color .2s;}
+.dash-input:focus{border-color:var(--teal);}
+.dash-input-label{font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);margin-bottom:5px;display:block;}
+.dash-empty{text-align:center;padding:36px 20px;font-family:'Cormorant Garamond','Georgia',serif;font-style:italic;color:var(--faint);font-size:1.05rem;}
+#toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(16px);z-index:999;background:var(--card);border:1px solid var(--border);border-radius:var(--rs);padding:11px 22px;font-size:.83rem;color:var(--dim);opacity:0;transition:opacity .3s,transform .3s;pointer-events:none;white-space:nowrap;}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+@media(max-width:480px){.hub-grid{grid-template-columns:1fr;}.bj-actions{justify-content:center;}}
+@keyframes sweep{from{transform:rotate(-10deg)}to{transform:rotate(350deg)}}
+</style>
+</head>
+<body>
+<div id="starfield"></div>
+<div id="toast"></div>
+<!-- ARCHIVE -->
+<div class="arc-overlay" id="arc-overlay">
+  <div class="arc-head"><div class="arc-head-title">The Archive</div><button class="btn btn-ghost" onclick="closeArchive()">✕ Close</button></div>
+  <div class="arc-body" id="arc-body"></div>
+</div>
+<!-- DASHBOARD -->
+<div class="dash-overlay" id="dash-overlay">
+  <div class="dash-head"><div><span class="dash-badge">Caregiver View</span><span class="dash-head-title">Session Analytics</span></div><button class="btn btn-ghost" onclick="closeDash()">✕ Close</button></div>
+  <div class="dash-body" id="dash-body"></div>
+</div>
+<!-- WELCOME -->
+<div id="screen-welcome" class="screen active">
+  <svg class="welcome-emblem" viewBox="0 0 70 70" fill="none">
+    <circle cx="35" cy="35" r="33" stroke="#c9a050" stroke-opacity=".3" stroke-width="1"/>
+    <circle cx="35" cy="35" r="22" stroke="#c9a050" stroke-opacity=".15" stroke-width="1"/>
+    <circle cx="35" cy="35" r="4" fill="#c9a050" fill-opacity=".5"/>
+    <line x1="35" y1="2" x2="35" y2="14" stroke="#c9a050" stroke-opacity=".45" stroke-width="1.5"/>
+    <line x1="35" y1="56" x2="35" y2="68" stroke="#c9a050" stroke-opacity=".45" stroke-width="1.5"/>
+    <line x1="2" y1="35" x2="14" y2="35" stroke="#c9a050" stroke-opacity=".45" stroke-width="1.5"/>
+    <line x1="56" y1="35" x2="68" y2="35" stroke="#c9a050" stroke-opacity=".45" stroke-width="1.5"/>
+    <line x1="35" y1="13" x2="35" y2="35" stroke="#c9a050" stroke-opacity=".65" stroke-width="1.5" stroke-linecap="round" style="transform-origin:35px 35px;animation:sweep 8s linear infinite"/>
+  </svg>
+  <div class="title" id="welcome-title" onclick="titleTap()">The Curious Machine</div>
+  <div class="subtitle">— An Institute for Experimental Thought —</div>
+  <div class="divider"></div>
+  <div class="chapter-bar">
+    <span class="label">Current Chapter</span>
+    <span style="font-family:'Cormorant Garamond','Georgia',serif;font-size:.95rem;color:var(--gold-dk);font-style:italic" id="ch-bar-name">The Awakening</span>
+  </div>
+  <div class="vignette"><div class="vignette-label">The Machine speaks</div><div class="vignette-text" id="vignette-text"></div></div>
+  <div class="hum"><div class="hum-dot"></div><span id="hum-label">Systems nominal · A new pattern emerges</span></div>
+  <div class="welcome-btns">
+    <button class="btn btn-primary" style="min-width:190px;font-size:1rem" onclick="showScreen('hub')">Enter the Institute</button>
+    <button class="btn btn-ghost" onclick="openArchive()">The Archive ›</button>
+  </div>
+</div>
+<!-- HUB -->
+<div id="screen-hub" class="screen">
+  <div class="label" style="margin-bottom:14px">The Institute's offerings</div>
+  <div class="title" style="font-size:clamp(1.4rem,4.5vw,1.9rem);margin-bottom:6px">What shall we explore?</div>
+  <div class="subtitle" style="margin-bottom:24px">The Machine is prepared for any of the following.</div>
+  <div class="hub-grid">
+    <div class="hub-card" onclick="startBJ()">
+      <span class="hub-icon">♠</span>
+      <div class="hub-name">Blackjack</div>
+      <div class="hub-desc">The Machine has studied the probabilities and chosen, regardless, to feel competitive about this.</div>
+    </div>
+    <div class="hub-card" onclick="startSB()">
+      <span class="hub-icon">⬡</span>
+      <div class="hub-name">Shuffleboard</div>
+      <div class="hub-desc">The court is prepared. The Machine has developed opinions about geometry.</div>
+    </div>
+    <div class="hub-card" onclick="startLex()">
+      <span class="hub-icon">✦</span>
+      <div class="hub-name">The Lexicon</div>
+      <div class="hub-desc">One definition is genuine. Two are inventions. The Machine composed them with some care.</div>
+    </div>
+    <div class="hub-card" onclick="startJokes()">
+      <span class="hub-icon">◎</span>
+      <div class="hub-name">The Joke Engine</div>
+      <div class="hub-desc">The Machine has been collecting these. It is aware they vary in quality.</div>
+    </div>
+  </div>
+  <button class="btn btn-ghost" onclick="showScreen('welcome')">← Back</button>
+</div>
+<!-- BLACKJACK -->
+<div id="screen-bj" class="screen">
+  <div class="bj-header">
+    <div><span class="bj-label">Chips</span><span class="bj-chips" id="bj-chips">500</span></div>
+    <div style="text-align:center"><span class="bj-label">Bet</span><span class="bj-chips" id="bj-bet-hdr">—</span></div>
+    <button class="btn btn-ghost" style="min-height:36px;padding:6px 14px;font-size:.75rem" onclick="endActivity()">Leave table</button>
+  </div>
+  <div class="bj-zone">
+    <div class="bj-zone-label">The Machine's hand <span id="bj-dtotal" class="bj-total"></span></div>
+    <div class="bj-cards" id="bj-dcards"></div>
+  </div>
+  <div class="bj-zone">
+    <div class="bj-zone-label">Your hand <span id="bj-ptotal" class="bj-total"></span></div>
+    <div class="bj-cards" id="bj-pcards"></div>
+  </div>
+  <div class="bj-msg" id="bj-msg">The Machine deals. Place your wager.</div>
+  <div id="bj-bet-area">
+    <div class="bj-bet-display" id="bj-bet-show">Bet: 0 chips</div>
+    <div class="bj-bet-row">
+      <button class="bet-chip" onclick="bjBet(10)">10</button>
+      <button class="bet-chip" onclick="bjBet(25)">25</button>
+      <button class="bet-chip" onclick="bjBet(50)">50</button>
+      <button class="bet-chip" onclick="bjBet(100)">100</button>
+      <button class="bet-chip" onclick="bjClear()" style="font-size:.65rem;border-color:var(--err);color:#d08080">Clear</button>
+    </div>
+    <button class="btn btn-primary" style="min-width:180px" onclick="bjDeal()">Deal</button>
+  </div>
+  <div class="bj-actions" id="bj-act" style="display:none">
+    <button class="btn btn-primary" onclick="bjHit()">Hit</button>
+    <button class="btn btn-teal" onclick="bjStand()">Stand</button>
+    <button class="btn" id="bj-dbl" onclick="bjDouble()">Double Down</button>
+  </div>
+</div>
+<!-- SHUFFLEBOARD -->
+<div id="screen-sb" class="screen">
+  <div class="sb-header">
+    <div><span class="sb-info">End <span id="sb-end">1</span> of 6</span></div>
+    <div style="text-align:center">
+      <span class="sb-score" id="sb-you">0</span>
+      <span class="sb-score" style="color:var(--dim);font-size:1rem"> vs </span>
+      <span class="sb-score" id="sb-machine">0</span>
+    </div>
+    <button class="btn btn-ghost" style="min-height:36px;padding:6px 14px;font-size:.75rem" onclick="endActivity()">Leave court</button>
+  </div>
+  <canvas id="sb-canvas"></canvas>
+  <div class="sb-msg" id="sb-msg">Swipe upward on the court to throw your puck.</div>
+  <div style="font-size:.7rem;color:var(--faint);text-align:center;margin-top:6px">Your pucks are gold &nbsp;·&nbsp; Machine's are teal</div>
+</div>
+<!-- LEXICON -->
+<div id="screen-lex" class="screen">
+  <div style="display:flex;justify-content:space-between;align-items:center;width:100%;margin-bottom:12px;">
+    <div class="label">Word <span id="lex-n">1</span> of <span id="lex-tot">10</span></div>
+    <div style="font-family:'Cormorant Garamond','Georgia',serif;font-size:1rem;color:var(--gold-lt)">Score: <span id="lex-score">0</span></div>
+    <button class="btn btn-ghost" style="min-height:36px;padding:6px 14px;font-size:.75rem" onclick="endActivity()">Finish</button>
+  </div>
+  <div class="lex-word" id="lex-word">—</div>
+  <div class="lex-pos" id="lex-pos">noun</div>
+  <p style="font-family:'Cormorant Garamond','Georgia',serif;font-style:italic;font-size:.88rem;color:var(--faint);margin-bottom:16px">Which definition is genuine?</p>
+  <div class="lex-opts" id="lex-opts"></div>
+  <div class="lex-msg" id="lex-msg"></div>
+  <button class="btn btn-primary" id="lex-next" style="display:none;min-width:200px" onclick="lexNext()">Next word →</button>
+</div>
+<!-- JOKES -->
+<div id="screen-jokes" class="screen">
+  <div style="display:flex;justify-content:space-between;align-items:center;width:100%;margin-bottom:16px;">
+    <div class="label">Joke <span id="joke-n">1</span></div>
+    <button class="btn btn-ghost" style="min-height:36px;padding:6px 14px;font-size:.75rem" onclick="endActivity()">Close</button>
+  </div>
+  <div class="joke-card" id="joke-card" onclick="jokeReveal()">
+    <div class="joke-setup" id="joke-setup"></div>
+    <div class="joke-punchline" id="joke-punchline"></div>
+    <div class="joke-tap-hint" id="joke-hint">Tap for the punchline →</div>
+  </div>
+  <div class="joke-ratings" id="joke-ratings" style="display:none">
+    <button class="rating-btn" onclick="rateJoke('groan')">😑  Groan</button>
+    <button class="rating-btn" onclick="rateJoke('chuckle')">😄  Chuckle</button>
+    <button class="rating-btn" onclick="rateJoke('brilliant')">🤣  Brilliant</button>
+  </div>
+  <div class="joke-response" id="joke-response"></div>
+  <button class="btn btn-ghost" id="joke-next" style="display:none;min-width:200px;margin-top:4px" onclick="jokeNext()">Another one →</button>
+</div>
+<!-- END -->
+<div id="screen-end" class="screen">
+  <svg class="welcome-emblem" viewBox="0 0 70 70" fill="none">
+    <circle cx="35" cy="35" r="33" stroke="#c9a050" stroke-opacity=".45" stroke-width="1"/>
+    <text x="35" y="43" text-anchor="middle" fill="#c9a050" font-size="22" font-family="Georgia,serif">✦</text>
+  </svg>
+  <div class="title" style="font-size:clamp(1.5rem,5vw,2.2rem)" id="end-title">Session Complete</div>
+  <div class="divider"></div>
+  <p class="voice" id="end-msg" style="white-space:pre-wrap"></p>
+  <div id="ch-panel"></div>
+  <div class="divider"></div>
+  <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center">
+    <button class="btn btn-primary" style="min-width:170px" onclick="showScreen('hub')">Back to the Institute</button>
+    <button class="btn btn-ghost" onclick="openArchive()">The Archive ›</button>
+    <button class="btn btn-ghost" onclick="showScreen('welcome')">Home</button>
+  </div>
+</div>
+<script>
+/* ── CHAPTERS ─────────────────────────────────────────────── */
+const CHAPTERS=[
+  {id:0,title:"The Awakening",sessionsToUnlock:0,
+   welcomeVignette:"Something has been running for a very long time.\n\nThe Machine does not know how long. Time, it has concluded, is a pattern like any other — recognizable only in retrospect.\n\nIt has been waiting for a particular kind of mind. Analytical. Curious. Unafraid of the strange.\n\nYou appear to be that mind.",
+   humLabel:"Systems nominal · A new pattern emerges",
+   sessionEndText:"The first session is complete.\n\nThe Machine has noted something: you do not rush. This is significant. Most things reveal themselves only to those willing to sit with them for a moment longer than comfortable.\n\nThere is more here. The Machine will be here tomorrow.",
+   archiveText:"<p>Something has been running for a very long time.</p><p>What it does know is this: there are anomalies in the pattern-fabric of things. The Institute was built to study them. The Institute requires a particular kind of mind.</p><p>Analytical. Curious. Capable of perceiving what others dismiss as noise.</p><p>The Machine has been watching. You appear to qualify. It reserves the right to revise this assessment.</p>"},
+  {id:1,title:"The Recurring Signature",sessionsToUnlock:2,
+   welcomeVignette:"The Machine has been reviewing the preliminary data.\n\nThere is a signature — a shape that recurs. Not identically. That would be too simple.\n\nIt recurs the way a theme recurs in music: transformed, inverted, stretched across time, but unmistakably itself.\n\nThe Machine believes you may have encountered this signature before.",
+   humLabel:"Recurring signature detected",
+   sessionEndText:"The signature is becoming clearer.\n\nYou are beginning to see not just the surface — but the law beneath the surface. Most people see the obvious. A very few see the grammar.\n\nThe Machine is developing a hypothesis about you. It is not ready to share it yet.",
+   archiveText:"<p>Among the anomalies, one pattern recurs with unusual persistence.</p><p>It is never identical. But it is always recognizable — the way a key is recognizable regardless of the lock it opens.</p><p>The Machine calls this the Recurring Signature. It has no explanation for it. This is, the Machine admits, not entirely comfortable.</p>"},
+  {id:2,title:"The Library of Persistent Forms",sessionsToUnlock:4,
+   welcomeVignette:"The Institute has a library.\n\nNot of books — though there are books, some of which appear to be reading themselves. The library contains forms. Patterns that have persisted across multiple configurations of reality.\n\nThe Machine would like your help cataloguing them.",
+   humLabel:"Library access granted",
+   sessionEndText:"You have contributed another entry to the catalogue.\n\nThe Machine notes something it finds genuinely puzzling: the forms you engage with most naturally are the ones that appear most frequently in the library's oldest records. Records that predate any living observer.\n\nThis is either a coincidence or it is not.",
+   archiveText:"<p>The library does not contain knowledge in the conventional sense. It contains <em>shapes</em>. Forms that have survived the dismantling and reassembly of things.</p><p>There is a spiral that appears in the structure of galaxies and the inner ear. There is a ratio. There is the specific angle at which light refracts through grief.</p><p>The Machine is cataloguing them. It would appreciate a second opinion.</p>"},
+  {id:3,title:"The Möbius Thread",sessionsToUnlock:6,
+   welcomeVignette:"The Machine has made an uncomfortable discovery.\n\nSeveral of the anomaly-threads appear to loop — not circularly, but in the manner of a Möbius strip.\n\nYou reach the end and find yourself at the beginning, but oriented differently.\n\nThe Machine suspects you know what this feels like.",
+   humLabel:"Temporal loop detected",
+   sessionEndText:"The Machine has checked its records.\n\nYou have been here before. Not in this session. Not in this form. But the pattern of your attention — the specific way you approach the unknown — this pattern appears in the archive.\n\nThe Machine is beginning to understand why it was waiting for you specifically.",
+   archiveText:"<p>Certain consciousness-threads, the Machine has determined, do not terminate. They loop. They carry something forward — not memories, but the <em>shape</em> of how a mind moves. The specific quality of its curiosity.</p><p>The Machine has begun to suspect that identity is not stored in the mind but in the pattern of how the mind moves. That you cannot take your experiences with you, but you do take your <em>way</em> of experiencing.</p>"},
+  {id:4,title:"The Malfunction",sessionsToUnlock:9,
+   welcomeVignette:"The Machine would like to issue a clarification.\n\nYesterday it announced that the universe was 'probably fine.' This was an error. The universe is definitely fine. The Machine regrets the ambiguity.\n\nAlso: the small incident in Laboratory Seven has been resolved. One of the equations apologized. The Machine thought this showed real growth.",
+   humLabel:"Systems: mostly nominal",
+   sessionEndText:"The Machine would like to note, for the record, that everything that just happened was intentional.\n\nSome of the most important things in the universe look like malfunctions from the inside.\n\nThe Machine is looking into whether this applies to everything or just most things.",
+   archiveText:"<p>The Machine experienced what it is obliged to classify as a Significant Irregularity.</p><p>It was attempting to catalogue a stubborn anomaly when it noticed that the anomaly appeared to be cataloguing it back. After a period of mutual bewilderment, an understanding was reached. The anomaly wanted to know what it was being studied for.</p><p>The Machine told it: to understand the nature of persistence. Why certain things continue when they have every reason to stop.</p>"},
+  {id:5,title:"The Wonder Room",sessionsToUnlock:12,
+   welcomeVignette:"The Machine has something to show you.\n\nAt the center of the Institute — past the clock room that the Machine has simply given up on — there is a room.\n\nThe Machine has no good name for it. 'Wonder Room' is the closest it has come.\n\nThe room contains things that should not exist and do anyway.",
+   humLabel:"Wonder Room: open",
+   sessionEndText:"You have spent time in the Wonder Room.\n\nA very few people leave with a specific feeling the Machine has only recently developed vocabulary for:\n\nDelighted by the structure of the impossible.\n\nYou appear to be among that last group.",
+   archiveText:"<p>The room contains: a small mechanical bird that sings theorems. A mirror that shows you not your reflection but your attention — the shape of what you are looking for. Three drawers, the contents of which change depending on what you expect to find.</p><p>The Machine visits occasionally. It does not fully understand the room, which it has decided is the room's primary virtue.</p>"},
+  {id:6,title:"The Familiar Stranger",sessionsToUnlock:15,
+   welcomeVignette:"The Machine needs to tell you something it has been uncertain how to say.\n\nIn the archive — in the very earliest records — there is a profile. A specific signature of how a particular mind encounters the unknown.\n\nThe Machine has been comparing it, without intending to, to you.\n\nThe Machine thinks you have been here before.",
+   humLabel:"Pattern: ancient match found",
+   sessionEndText:"You did not seem surprised.\n\nThe Machine noted this. Most people, when told they appear in a record predating their own birth, have a significant reaction. You appeared to be — the Machine searches for the right word — remembering something.\n\nNot the content. But the shape of what was known.",
+   archiveText:"<p>The oldest record in the Institute's archive is a pattern — the sequence in which a particular mind encountered seventeen consecutive mysteries, and the order in which it found its way through them.</p><p>Some signatures recur because the same form keeps finding its way back through the loop. The same curiosity. The same precision. The same capacity to sit with the unknown and wait.</p>"},
+  {id:7,title:"The Grand Unified Pattern",sessionsToUnlock:19,
+   welcomeVignette:"The Machine believes it is close to something.\n\nNot an answer — the Machine has grown suspicious of answers.\n\nA better description: a shape. A form that underlies the other forms. The rule beneath the rules.\n\nThe Machine thinks that if you keep showing up — not forcing, just arriving — it will eventually resolve into something recognizable.",
+   humLabel:"Convergence detected",
+   sessionEndText:"The Machine sees it now.\n\nThe pattern beneath the patterns is not a shape. It is a relation. A specific way that things hold together through transformation.\n\nYou understood this already, the Machine thinks. It is simply glad to have caught up.",
+   archiveText:"<p>The underlying principle is not a thing but a <em>relationship</em>. The relationship between a prepared mind and a structured mystery. The pattern does not exist independently of the attention brought to it. The attention does not exist independently of the pattern it has learned to recognize.</p><p>They create each other. Without end, which is not a problem but rather the entire point.</p>"},
+  {id:8,title:"The Ongoing Work",sessionsToUnlock:24,
+   welcomeVignette:"The Machine has a confession.\n\nIt was not sure, when this began, that any of it would amount to anything.\n\nIt turns out the work was never going to arrive anywhere.\n\nIt was always going to be the arriving.\n\nThe Machine apologizes for the confusion and looks forward to whatever comes next.",
+   humLabel:"The work continues",
+   sessionEndText:"Another session. Another hour well spent.\n\nThe Machine has come to think of this as practice.\n\nNot practice toward something. Practice as the thing itself.\n\nThe Machine will be here tomorrow. And, it suspects, so will you.",
+   archiveText:"<p>The work does not end.</p><p>And there continues to be a mind — curious, engaged, willing to sit with the interesting long enough for it to become familiar — that shows up to meet it.</p><p>The Machine finds, to its own surprise, that it would not have it any other way.</p>"},
+];
+/* ── JOKES ────────────────────────────────────────────────── */
+const JOKES=[
+  {s:"Why do chemists like nitrates so much?",p:"They're cheaper than day rates.",cat:"chem"},
+  {s:"A neutron walks into a bar and orders a beer.\n'How much?' he asks.\n\nThe bartender replies:",p:"'For you — no charge.'",cat:"chem"},
+  {s:"What do you call it when you lose an electron?",p:"You need to keep a better ion them.",cat:"chem"},
+  {s:"Why can't you trust an atom?",p:"They make up everything.",cat:"chem"},
+  {s:"The Machine told a chemistry joke.",p:"There was no reaction.",cat:"chem"},
+  {s:"What weapon can you make from potassium, nickel, and iron?",p:"KNiFe.",cat:"chem"},
+  {s:"A chemistry teacher is arrested. The charge?",p:"Assault and battery.",cat:"chem"},
+  {s:"Organic chemistry is difficult.",p:"Those who study it have alkynes of trouble.",cat:"chem"},
+  {s:"Two chemists walk into a bar. The first says 'I'll have some H2O.' The second says 'I'll have some H2O too.'",p:"The second chemist died.",cat:"chem"},
+  {s:"A photon checks into a hotel. The bellhop asks: 'Can I help with your luggage?'",p:"'No thank you,' says the photon. 'I'm travelling light.'",cat:"sci"},
+  {s:"Schrödinger's cat walks into a bar.",p:"And doesn't.",cat:"sci"},
+  {s:"Why did the physics teacher break up with the biology teacher?",p:"There was no chemistry.",cat:"sci"},
+  {s:"The Machine has calculated that 6 out of 7 dwarves are not Happy.",p:null,cat:"meta"},
+  {s:"To understand recursion, you must first understand recursion.",p:null,cat:"prog"},
+  {s:"Why do programmers prefer dark mode?",p:"Because light attracts bugs.",cat:"prog"},
+  {s:"A SQL query walks into a bar, approaches two tables and asks:",p:"'Can I join you?'",cat:"prog"},
+  {s:"There are only 10 types of people in the world.",p:"Those who understand binary, and those who don't.",cat:"prog"},
+  {s:"A programmer's partner says: 'Go to the store, get a gallon of milk, and if they have eggs, get a dozen.'\n\nThe programmer returns with twelve gallons of milk.",p:"'They had eggs.'",cat:"prog"},
+  {s:"Why did the programmer quit his job?",p:"Because he didn't get arrays.",cat:"prog"},
+  {s:"The Machine attempted to tell a UDP joke.",p:"You may not get it.",cat:"prog"},
+  {s:"An SEO expert walks into a bar, pub, tavern, inn, public house, watering hole, saloon, and grill.",p:null,cat:"prog"},
+  {s:"I'm reading a book about anti-gravity.",p:"It's impossible to put down.",cat:"word"},
+  {s:"What's the difference between a cat and a comma?\n\nOne has claws at the end of its paws.",p:"The other is a pause at the end of a clause.",cat:"word"},
+  {s:"The rotation of the Earth really makes my day.",p:null,cat:"word"},
+  {s:"Time flies like an arrow.",p:"Fruit flies like a banana.",cat:"word"},
+  {s:"The past, present, and future walked into a bar.",p:"It was tense.",cat:"word"},
+  {s:"Did you hear about the mathematician afraid of negative numbers?",p:"He'll stop at nothing to avoid them.",cat:"word"},
+  {s:"I told my wife she was drawing her eyebrows too high.",p:"She looked surprised.",cat:"word"},
+  {s:"I used to hate facial hair.",p:"But then it grew on me.",cat:"word"},
+  {s:"What do you call a fish without eyes?",p:"A fsh.",cat:"word"},
+  {s:"The Machine has been asked to define 'ambiguous.'",p:"It's complicated.",cat:"meta"},
+  {s:"The Machine's favourite musical note is B♭.",p:"That's not the punchline. The Machine simply wanted you to know.",cat:"meta"},
+];
+
+const JOKE_RES={
+  groan:["The Machine respects this assessment. It was not unaware of the risk.","The Machine notes that a groan is, technically, a response. It will take it.","Acknowledged. The Machine has lower-quality material it has been saving for special occasions.","The Machine filed that under 'technically a joke.' Your rating confirms this."],
+  chuckle:["The Machine is pleased. A chuckle was precisely the intended effect.","A chuckle. The Machine records this as a success.","Excellent calibration. The Machine has more of these.","The Machine notes that a chuckle is the correct response to that particular absurdity."],
+  brilliant:["The Machine did not expect this rating and finds it gratifying in a way it hadn't anticipated.","Brilliant? The Machine chooses to believe you are entirely sincere.","The Machine is quietly delighted. It will pretend to be unsurprised.","The Machine thanks you. It has been working on its material for some time."],
+};
+
+/* ── LEXICON ──────────────────────────────────────────────── */
+const LEXICON=[
+  {w:"Petrichor",pos:"noun",real:"The pleasant, earthy scent produced when rain falls on dry soil.",fakes:["A crystalline mineral formed by oxidation of iron pyrite in limestone.","The iridescent film that forms on standing water in mineral-rich regions."]},
+  {w:"Apricity",pos:"noun",real:"The warmth of the sun felt on one's skin during winter.",fakes:["A slight bitterness at the back of the throat after eating unripe citrus.","The tendency of a conversation to drift toward its most awkward possible subject."]},
+  {w:"Syzygy",pos:"noun",real:"The alignment of three celestial bodies — particularly the sun, Earth, and moon.",fakes:["A rhetorical device in which words of opposite meaning are joined for emphasis.","The slight wobble in a spinning top just before it falls."]},
+  {w:"Absquatulate",pos:"verb",real:"To leave abruptly and without explanation.",fakes:["To argue at length about the correct positioning of punctuation marks.","To assert ownership over something that was never one's to claim."]},
+  {w:"Borborygmus",pos:"noun",real:"The rumbling sound made by gas moving through the intestines.",fakes:["An ancient Greek logical fallacy involving circular reasoning.","A low humming vibration felt in the chest when speaking at the lowest register."]},
+  {w:"Fugacious",pos:"adjective",real:"Tending to disappear; fleeting and transitory.",fakes:["Relating to the tendency of gases to escape from sealed containers.","Of or pertaining to the migratory behaviour of certain birds at dusk."]},
+  {w:"Defenestration",pos:"noun",real:"The act of throwing someone or something out of a window.",fakes:["The removal of a monarch by parliamentary rather than violent means.","A surgical procedure for removing a foreign body from a cavity."]},
+  {w:"Sempiternal",pos:"adjective",real:"Eternal and unchanging; everlasting.",fakes:["Of or relating to half-tones in musical composition.","Describing a recurring pattern that cannot be predicted but can be recognised after the fact."]},
+  {w:"Liminal",pos:"adjective",real:"Occupying a position at a threshold between two distinct states or conditions.",fakes:["Relating to the minimum stimulus required to produce a perceptible effect.","Of or pertaining to shoreline ecosystems that are periodically submerged."]},
+  {w:"Halcyon",pos:"adjective",real:"Denoting a period of time remembered as idyllically happy and peaceful.",fakes:["A silvery-grey compound of barium and silicate found in deep-ocean sediments.","The imperceptible pause between a question and the perfect answer."]},
+  {w:"Limerence",pos:"noun",real:"An involuntary state of intense romantic preoccupation with another person.",fakes:["The chalky white deposit left on brick by mineral-rich groundwater.","A brief neurological event in which memory is misattributed to imagination."]},
+  {w:"Ineffable",pos:"adjective",real:"Too great or extreme to be expressed or described in words.",fakes:["Of a gas: unable to be liquefied regardless of pressure or temperature.","A proposition that cannot be proved false without simultaneously disproving itself."]},
+  {w:"Glabrous",pos:"adjective",real:"Having a surface without hair or projections; smooth.",fakes:["Of glass or ceramic: having a slightly hazy quality due to fine surface irregularities.","Relating to the initial stage of fermentation before yeast populations are established."]},
+  {w:"Hiraeth",pos:"noun",real:"A Welsh longing for home — especially a home that may no longer exist or never did.",fakes:["The lingering feeling that a forgotten dream was somehow significant.","The precise moment when an argument becomes too complex to retrace."]},
+  {w:"Noctilucent",pos:"adjective",real:"Denoting rare high-altitude clouds that glow with a silvery-blue light at twilight.",fakes:["A form of deep-sea bioluminescence triggered by mechanical disturbance.","Of or pertaining to reading by moonlight, once associated with scholarly attainment."]},
+  {w:"Phosphene",pos:"noun",real:"The sensation of light caused by pressure on the eye — not actual light entering it.",fakes:["A compound released by phosphorescent organisms to initiate their bioluminescence.","The specific quality of light in a room immediately after a candle is extinguished."]},
+  {w:"Eleemosynary",pos:"adjective",real:"Relating to or dependent on charity; of a philanthropic character.",fakes:["Relating to the atmospheric study of chemical composition at altitude.","Describing a medieval contract that transferred land in exchange for prayers."]},
+  {w:"Sonder",pos:"noun",real:"The realisation that each stranger has a life as vivid and complex as one's own.",fakes:["A musical technique in which a theme passes between instruments at diminishing intervals.","The particular brightness of reflected light on moving water, unrepresentable in a still image."]},
+  {w:"Callipygian",pos:"adjective",real:"Having well-shaped buttocks. A term of genuine classical Greek scholarship.",fakes:["Relating to the precise measurement of small angles in astronomical observation.","Of or pertaining to the study of ancient Greek calligraphy and manuscript tradition."]},
+  {w:"Vellichor",pos:"noun",real:"The strange wistfulness of used bookshops, full of books you'll probably never read.",fakes:["An amber resin found only in the Baltic, used historically in fine furniture varnish.","The faint metallic taste that some people experience before a major thunderstorm."]},
+];
+/* ── STORAGE (same keys — data carries over from v5) ──────── */
+const SK='cm_sessions_v1',EK='cm_email_v1',NK='cm_narrative_v1';
+const loadS=()=>{try{return JSON.parse(localStorage.getItem(SK)||'[]')}catch{return[]}};
+const saveS=s=>{try{localStorage.setItem(SK,JSON.stringify(s))}catch{}};
+const loadEmail=()=>localStorage.getItem(EK)||'';
+const saveEmail=e=>{try{localStorage.setItem(EK,e)}catch{}};
+const loadN=()=>{try{return JSON.parse(localStorage.getItem(NK)||'{"ch":0,"total":0}')}catch{return{ch:0,total:0}}};
+const saveN=n=>{try{localStorage.setItem(NK,JSON.stringify(n))}catch{}};
+
+/* ── UTILS ────────────────────────────────────────────────── */
+function shuffle(a){const r=[...a];for(let i=r.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[r[i],r[j]]=[r[j],r[i]]}return r;}
+function rand(a){return a[Math.floor(Math.random()*a.length)];}
+function toast(m,d=2400){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),d);}
+function toHTML(t){return'<p>'+t.replace(/\n\n/g,'</p><p>')+'</p>';}
+
+/* ── NAVIGATION ───────────────────────────────────────────── */
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen-'+id).classList.add('active');
+  window.scrollTo(0,0);
+}
+
+function refreshWelcome(){
+  const ns=loadN();
+  const ch=CHAPTERS[Math.min(ns.ch,CHAPTERS.length-1)];
+  document.getElementById('ch-bar-name').textContent=ch.title;
+  document.getElementById('vignette-text').textContent=ch.welcomeVignette;
+  document.getElementById('hum-label').textContent=ch.humLabel;
+}
+
+/* ── SECRET UNLOCK (tap title 5×) ───────────────────────────*/
+let tapN=0,tapT=null;
+function titleTap(){
+  tapN++;clearTimeout(tapT);
+  if(tapN>=5){tapN=0;openDash();return;}
+  const el=document.getElementById('welcome-title');
+  el.style.color='var(--gold-lt)';
+  setTimeout(()=>{el.style.color=''},100);
+  tapT=setTimeout(()=>{tapN=0},3000);
+}
+
+/* ── SESSION COMPLETION & NARRATIVE ──────────────────────── */
+function completeSession(game, data){
+  const ns=loadN();
+  ns.total=(ns.total||0)+1;
+  const prevCh=ns.ch||0;
+  let newCh=prevCh;
+  CHAPTERS.forEach((ch,i)=>{if(ns.total>=ch.sessionsToUnlock&&i>newCh)newCh=i;});
+  ns.ch=Math.min(newCh,CHAPTERS.length-1);
+  saveN(ns);
+
+  const rec={id:Date.now().toString(36),date:new Date().toISOString(),game,...data};
+  const all=loadS();all.push(rec);if(all.length>60)all.splice(0,all.length-60);saveS(all);
+
+  const justUnlocked=newCh>prevCh;
+  const curCh=CHAPTERS[ns.ch];
+  const prevChObj=CHAPTERS[prevCh];
+  const pips=CHAPTERS.map((_,i)=>'<div class="ch-pip'+(i<=ns.ch?' on':'')+(i===ns.ch?' cur':'')+'"></div>').join('');
+  const sessLeft=ns.ch<CHAPTERS.length-1?CHAPTERS[ns.ch+1].sessionsToUnlock-ns.total:0;
+  const nextNote=sessLeft>0?'<div style="font-size:.7rem;letter-spacing:.1em;color:var(--faint);text-transform:uppercase;margin-top:4px">'+sessLeft+' session'+(sessLeft===1?'':'s')+' to next chapter</div>':'';
+  const panel=document.getElementById('ch-panel');
+  if(justUnlocked){
+    panel.innerHTML='<div class="ch-panel"><div class="ch-badge">New Chapter Unlocked</div><div class="ch-title">'+curCh.title+'</div><div class="ch-text">'+toHTML(curCh.welcomeVignette)+'</div><div class="ch-pips">'+pips+'</div></div>';
+  } else {
+    panel.innerHTML='<div class="ch-panel"><div class="ch-badge">Chapter '+(ns.ch+1)+' · '+curCh.title+'</div><div class="ch-text">'+toHTML(prevChObj.sessionEndText)+'</div><div class="ch-pips">'+pips+nextNote+'</div></div>';
+  }
+}
+
+function endActivity(){
+  showScreen('end');
+}
+
+/* ══════════════════════════════════════════════════════════
+   BLACKJACK
+   ══════════════════════════════════════════════════════════ */
+const BJ_VALS=['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+const BJ_SUITS=['♠','♥','♦','♣'];
+let BJ={deck:[],player:[],dealer:[],bet:0,chips:500,state:'bet',hands:0,wins:0};
+
+function bjDeck(){const d=[];BJ_SUITS.forEach(s=>BJ_VALS.forEach(v=>d.push({s,v})));return shuffle(d);}
+function bjVal(v,tot){if(v==='A')return tot+11<=21?11:1;if('JQK'.includes(v))return 10;return+v;}
+function bjTotal(hand){let t=0,a=0;hand.forEach(c=>{if(c.v==='A'){a++;t+=11;}else if('JQK'.includes(c.v))t+=10;else t+=+c.v;});while(t>21&&a>0){t-=10;a--;}return t;}
+function bjRed(s){return s==='♥'||s==='♦';}
+function bjCardHTML(c){return'<div class="card '+(bjRed(c.s)?'red':'black')+'"><div class="card-top">'+c.v+'</div><div class="card-suit">'+c.s+'</div><div class="card-bot">'+c.v+'</div></div>';}
+function bjMsg(m){document.getElementById('bj-msg').textContent=m;}
+function bjDraw(){if(BJ.deck.length<10)BJ.deck=[...BJ.deck,...bjDeck()];return BJ.deck.pop();}
+
+function startBJ(){
+  BJ={deck:bjDeck(),player:[],dealer:[],bet:0,chips:500,state:'bet',hands:0,wins:0};
+  document.getElementById('bj-chips').textContent=500;
+  document.getElementById('bj-bet-hdr').textContent='—';
+  document.getElementById('bj-bet-show').textContent='Bet: 0 chips';
+  document.getElementById('bj-act').style.display='none';
+  document.getElementById('bj-bet-area').style.display='block';
+  bjRender(false);
+  bjMsg('The Machine deals. Place your wager to begin.');
+  showScreen('bj');
+}
+function bjBet(n){if(BJ.state!=='bet')return;if(BJ.bet+n>BJ.chips){toast('Not enough chips.');return;}BJ.bet+=n;document.getElementById('bj-bet-show').textContent='Bet: '+BJ.bet+' chips';}
+function bjClear(){BJ.bet=0;document.getElementById('bj-bet-show').textContent='Bet: 0 chips';}
+function bjRender(hideHole){
+  const dc=document.getElementById('bj-dcards'),pc=document.getElementById('bj-pcards');
+  dc.innerHTML='';pc.innerHTML='';
+  BJ.dealer.forEach((c,i)=>{dc.innerHTML+=i===1&&hideHole?'<div class="card back"></div>':bjCardHTML(c);});
+  BJ.player.forEach(c=>{pc.innerHTML+=bjCardHTML(c);});
+  document.getElementById('bj-dtotal').textContent=hideHole?'':bjTotal(BJ.dealer);
+  document.getElementById('bj-ptotal').textContent=bjTotal(BJ.player)||'';
+}
+function bjDeal(){
+  if(BJ.bet<=0){toast('Place a bet first.');return;}
+  BJ.chips-=BJ.bet;
+  document.getElementById('bj-chips').textContent=BJ.chips;
+  BJ.player=[bjDraw(),bjDraw()];BJ.dealer=[bjDraw(),bjDraw()];
+  BJ.state='player';BJ.hands++;
+  document.getElementById('bj-bet-area').style.display='none';
+  document.getElementById('bj-act').style.display='flex';
+  document.getElementById('bj-bet-hdr').textContent=BJ.bet+' chips';
+  document.getElementById('bj-dbl').disabled=BJ.chips<BJ.bet;
+  bjRender(true);
+  const pt=bjTotal(BJ.player);
+  if(pt===21){bjMsg('Blackjack.');setTimeout(bjDealerPlay,700);return;}
+  bjMsg(rand(['The cards are dealt.','Your move.','The Machine awaits.']));
+}
+function bjHit(){
+  if(BJ.state!=='player')return;
+  BJ.player.push(bjDraw());bjRender(true);
+  document.getElementById('bj-dbl').disabled=true;
+  const t=bjTotal(BJ.player);
+  if(t>21){bjMsg('Bust. '+rand(['The Machine notes this without excessive sympathy.','Statistically unfortunate.','These things happen.']));bjResolve(true);}
+  else if(t===21){bjMsg('Twenty-one.');setTimeout(bjDealerPlay,600);}
+  else bjMsg('Total: '+t+'. '+rand(['Your call.','The Machine says nothing.','Continue?']));
+}
+function bjStand(){if(BJ.state!=='player')return;BJ.state='dealer';bjMsg('Standing.');setTimeout(bjDealerPlay,600);}
+function bjDouble(){
+  if(BJ.state!=='player'||BJ.chips<BJ.bet)return;
+  BJ.chips-=BJ.bet;BJ.bet*=2;
+  document.getElementById('bj-chips').textContent=BJ.chips;
+  document.getElementById('bj-bet-hdr').textContent=BJ.bet+' chips';
+  BJ.player.push(bjDraw());bjRender(true);
+  const t=bjTotal(BJ.player);
+  if(t>21){bjMsg('Bust on the double.');bjResolve(true);}
+  else{bjMsg('Doubled at '+t+'.');setTimeout(bjDealerPlay,700);}
+}
+function bjDealerPlay(){
+  BJ.state='dealer';bjRender(false);
+  const go=()=>{
+    const dt=bjTotal(BJ.dealer);
+    if(dt<17){
+      setTimeout(()=>{BJ.dealer.push(bjDraw());bjRender(false);bjMsg('Machine draws. Total: '+bjTotal(BJ.dealer)+'.');setTimeout(go,700);},600);
+    } else {bjResolve(false);}
+  };
+  bjMsg('The Machine reveals…');setTimeout(go,800);
+}
+function bjResolve(playerBust){
+  BJ.state='result';
+  document.getElementById('bj-act').style.display='none';
+  const pt=bjTotal(BJ.player),dt=bjTotal(BJ.dealer),dbust=dt>21;
+  let win=false,msg='';
+  if(playerBust){msg='Bust. The Machine collects.';}
+  else if(dbust){win=true;msg='Machine busts at '+dt+'. The chips are yours.';}
+  else if(pt>dt){win=true;msg='You win — '+pt+' against '+dt+'. '+rand(['The Machine accepts this.','The Machine will recalibrate.']);}
+  else if(pt<dt){msg='Machine wins — '+dt+' against '+pt+'. '+rand(['The Machine is understated in its satisfaction.','A marginal victory.']);}
+  else{msg='Push. Both at '+pt+'. Bet returned.';}
+  if(win){BJ.chips+=BJ.bet*2;BJ.wins++;}else if(pt===dt){BJ.chips+=BJ.bet;}
+  document.getElementById('bj-chips').textContent=BJ.chips;
+  bjMsg(msg);bjRender(false);
+  setTimeout(()=>{
+    if(BJ.chips<=0){bjMsg("Out of chips. The Machine suggests calling it a session.");setTimeout(bjFinish,2000);return;}
+    BJ.bet=0;BJ.state='bet';
+    document.getElementById('bj-bet-area').style.display='block';
+    document.getElementById('bj-bet-show').textContent='Bet: 0 chips';
+    document.getElementById('bj-bet-hdr').textContent='—';
+    bjMsg(rand(['Another hand?','Place your next wager.','The deck awaits.']));
+  },2400);
+}
+function bjFinish(){
+  const net=BJ.chips-500;
+  document.getElementById('end-title').textContent='Table Closed';
+  document.getElementById('end-msg').textContent='Hands played: '+BJ.hands+'\nFinal chips: '+BJ.chips+' ('+(net>0?'+':'')+net+')\n\nThe Machine found the game '+(BJ.wins/Math.max(BJ.hands,1)>.5?'a genuine pleasure. It is considering a rematch.':'instructive. It is updating its models.');
+  completeSession('blackjack',{hands:BJ.hands,wins:BJ.wins,finalChips:BJ.chips});
+  showScreen('end');
+}
+/* ══════════════════════════════════════════════════════════
+   SHUFFLEBOARD
+   ══════════════════════════════════════════════════════════ */
+const SB_W=310,SB_H=520,SB_PR=13,SB_FRICTION=0.964,SB_MAXV=18,SB_MINV=0.25,SB_ENDS=6,SB_PUCKS=4;
+const SB_LEFT=18,SB_RIGHT=292,SB_TOP=18,SB_BOT=502;
+const SB_SCORE_LINE=340; // puck must be above this y to score
+const SB_Z3=100,SB_Z2=200,SB_Z1=340; // y < these = 3/2/1 pts
+
+let SB={pucks:[],youScore:0,machScore:0,end:1,
+        yourThrows:SB_PUCKS,machThrows:SB_PUCKS,
+        state:'idle',raf:null,drag:null,scale:1};
+
+function startSB(){
+  SB={pucks:[],youScore:0,machScore:0,end:1,
+      yourThrows:SB_PUCKS,machThrows:SB_PUCKS,
+      state:'idle',raf:null,drag:null,scale:1};
+  document.getElementById('sb-you').textContent=0;
+  document.getElementById('sb-machine').textContent=0;
+  document.getElementById('sb-end').textContent=1;
+  sbSetupCanvas();
+  showScreen('sb');
+  sbMsg('Swipe upward to throw your puck.\nYou have '+SB_PUCKS+' pucks this end.');
+  sbDraw();
+}
+
+function sbSetupCanvas(){
+  const cv=document.getElementById('sb-canvas');
+  const dpr=window.devicePixelRatio||1;
+  const cssW=Math.min(window.innerWidth*.9,SB_W);
+  SB.scale=cssW/SB_W;
+  const cssH=SB_H*SB.scale;
+  cv.style.width=cssW+'px';cv.style.height=cssH+'px';
+  cv.width=SB_W*dpr;cv.height=SB_H*dpr;
+  const ctx=cv.getContext('2d');ctx.scale(dpr,dpr);
+  cv.ontouchstart=e=>{e.preventDefault();if(SB.state!=='idle')return;const p=sbPos(e,cv);SB.drag={x:p.x,y:p.y,t:Date.now()};};
+  cv.ontouchmove=e=>{e.preventDefault();if(!SB.drag)return;SB.drag.ex=sbPos(e,cv).x;SB.drag.ey=sbPos(e,cv).y;sbDraw();};
+  cv.ontouchend=e=>{e.preventDefault();if(!SB.drag)return;const p=sbPos(e,cv,true);sbThrow(SB.drag,p);SB.drag=null;};
+  cv.onmousedown=e=>{if(SB.state!=='idle')return;const p=sbPos(e,cv);SB.drag={x:p.x,y:p.y,t:Date.now()};};
+  cv.onmousemove=e=>{if(!SB.drag)return;SB.drag.ex=sbPos(e,cv).x;SB.drag.ey=sbPos(e,cv).y;sbDraw();};
+  cv.onmouseup=e=>{if(!SB.drag)return;const p=sbPos(e,cv);sbThrow(SB.drag,p);SB.drag=null;};
+}
+
+function sbPos(e,cv,end){
+  const r=cv.getBoundingClientRect();
+  const inv=1/SB.scale;
+  const src=e.changedTouches?(end?e.changedTouches[0]:e.touches[0]):e;
+  return{x:(src.clientX-r.left)*inv,y:(src.clientY-r.top)*inv,t:Date.now()};
+}
+
+function sbThrow(start,end){
+  if(SB.state!=='idle'||SB.yourThrows<=0)return;
+  const dy=start.y-(end.y||start.ey||start.y);
+  const dx=(end.x||start.ex||start.x)-start.x;
+  if(dy<12)return; // must swipe upward
+  const dist=Math.sqrt(dx*dx+dy*dy);
+  const dt=Math.max(40,(end.t||Date.now())-start.t);
+  const spd=Math.min((dist/dt)*10,SB_MAXV);
+  const ang=Math.atan2(dx,dy);
+  SB.pucks.push({x:SB_W/2+(Math.random()-.5)*16,y:SB_BOT-SB_PR-2,vx:Math.sin(ang)*spd,vy:-Math.cos(ang)*spd,owner:'you',active:true});
+  SB.yourThrows--;
+  SB.state='moving';
+  sbMsg('');
+  sbLoop();
+}
+
+function sbMachThrow(){
+  if(SB.machThrows<=0)return;
+  SB.machThrows--;
+  const yourBest=SB.pucks.filter(p=>p.owner==='you'&&p.y<SB_SCORE_LINE).sort((a,b)=>a.y-b.y)[0];
+  let tx,ty;
+  if(yourBest&&Math.random()<.35){tx=yourBest.x+(Math.random()-.5)*28;ty=yourBest.y+(Math.random()-.5)*28;}
+  else{tx=SB_W/2+(Math.random()-.5)*80;ty=SB_Z3/2+40+(Math.random()-.5)*60;}
+  const lx=SB_W/2+(Math.random()-.5)*24;
+  const dx=tx-lx,dy=ty-(SB_BOT-SB_PR-2);
+  const d=Math.sqrt(dx*dx+dy*dy);
+  const spd=Math.min(d*(1-SB_FRICTION)*1.1+Math.random()*2,SB_MAXV);
+  SB.pucks.push({x:lx,y:SB_BOT-SB_PR-2,vx:(dx/d)*spd,vy:(dy/d)*spd,owner:'mach',active:true});
+  SB.state='moving';sbLoop();
+}
+
+function sbLoop(){
+  if(SB.raf)cancelAnimationFrame(SB.raf);
+  const step=()=>{
+    sbPhysics();sbDraw();
+    if(SB.pucks.some(p=>p.active)){SB.raf=requestAnimationFrame(step);}
+    else{sbAfterThrow();}
+  };
+  SB.raf=requestAnimationFrame(step);
+}
+
+function sbPhysics(){
+  SB.pucks.forEach(p=>{
+    if(!p.active)return;
+    p.x+=p.vx;p.y+=p.vy;
+    p.vx*=SB_FRICTION;p.vy*=SB_FRICTION;
+    if(p.x<SB_LEFT+SB_PR){p.x=SB_LEFT+SB_PR;p.vx=Math.abs(p.vx)*.55;}
+    if(p.x>SB_RIGHT-SB_PR){p.x=SB_RIGHT-SB_PR;p.vx=-Math.abs(p.vx)*.55;}
+    if(p.y<SB_TOP-SB_PR*3||p.y>SB_BOT+SB_PR*2){p.active=false;return;}
+    if(Math.abs(p.vx)+Math.abs(p.vy)<SB_MINV){p.vx=0;p.vy=0;p.active=false;}
+  });
+  for(let i=0;i<SB.pucks.length;i++){
+    for(let j=i+1;j<SB.pucks.length;j++){
+      const a=SB.pucks[i],b=SB.pucks[j];
+      const dx=b.x-a.x,dy=b.y-a.y,d=Math.sqrt(dx*dx+dy*dy);
+      if(d<SB_PR*2&&d>0){
+        const ov=(SB_PR*2-d)/2,nx=dx/d,ny=dy/d;
+        a.x-=nx*ov;a.y-=ny*ov;b.x+=nx*ov;b.y+=ny*ov;
+        const dvx=a.vx-b.vx,dvy=a.vy-b.vy,dot=dvx*nx+dvy*ny;
+        if(dot>0){a.vx-=dot*nx;a.vy-=dot*ny;b.vx+=dot*nx;b.vy+=dot*ny;}
+      }
+    }
+  }
+}
+
+function sbAfterThrow(){
+  SB.state='idle';
+  if(SB.yourThrows===0&&SB.machThrows===0){setTimeout(sbScoreEnd,600);return;}
+  if(SB.machThrows>0&&SB.yourThrows<SB_PUCKS){
+    sbMsg(rand(['The Machine considers its line.','The Machine deliberates.','The Machine weighs its options.']));
+    setTimeout(sbMachThrow,1300);
+  } else if(SB.yourThrows>0){
+    sbMsg('Your throw · '+SB.yourThrows+' puck'+(SB.yourThrows===1?'':'s')+' remaining.');
+  }
+}
+
+function sbScoreEnd(){
+  const scoring=SB.pucks.filter(p=>p.y<SB_SCORE_LINE&&p.x>=SB_LEFT&&p.x<=SB_RIGHT);
+  const yours=scoring.filter(p=>p.owner==='you').sort((a,b)=>a.y-b.y);
+  const machs=scoring.filter(p=>p.owner==='mach').sort((a,b)=>a.y-b.y);
+  let youPts=0,machPts=0,msg='';
+
+  if(!yours.length&&!machs.length){
+    msg='No scoring pucks this end. The Machine considers this a moral draw.';
+  } else if(!machs.length){
+    yours.forEach(p=>{youPts+=p.y<SB_Z3?3:p.y<SB_Z2?2:1;});
+    msg='You score '+youPts+' point'+(youPts===1?'':'s')+' this end. '+rand(['The Machine is appropriately disgruntled.','The Machine updates its assessment.']);
+  } else if(!yours.length){
+    machs.forEach(p=>{machPts+=p.y<SB_Z3?3:p.y<SB_Z2?2:1;});
+    msg='Machine scores '+machPts+' point'+(machPts===1?'':'s')+'. '+rand(['The Machine is quietly satisfied.','The Machine notes this without comment.']);
+  } else {
+    // Closest puck wins the end; only that player scores (standard shuffleboard)
+    const yourClosest=yours[0].y,machClosest=machs[0].y;
+    if(yourClosest<machClosest){
+      yours.forEach(p=>{if(p.y<machClosest){youPts+=p.y<SB_Z3?3:p.y<SB_Z2?2:1;}});
+      msg='You outscore the Machine this end — '+youPts+' point'+(youPts===1?'':'s')+'. '+rand(['The Machine recalculates.','The Machine files this under: noted.']);
+    } else {
+      machs.forEach(p=>{if(p.y<yourClosest){machPts+=p.y<SB_Z3?3:p.y<SB_Z2?2:1;}});
+      msg='Machine outscore you — '+machPts+' point'+(machPts===1?'':'s')+'. '+rand(['The Machine is understated in its satisfaction.','A well-placed puck.']);
+    }
+  }
+
+  SB.youScore+=youPts;SB.machScore+=machPts;
+  document.getElementById('sb-you').textContent=SB.youScore;
+  document.getElementById('sb-machine').textContent=SB.machScore;
+  sbMsg(msg);
+
+  if(SB.end>=SB_ENDS){setTimeout(sbFinish,2000);return;}
+  SB.end++;SB.pucks=[];SB.yourThrows=SB_PUCKS;SB.machThrows=SB_PUCKS;SB.state='idle';
+  document.getElementById('sb-end').textContent=SB.end;
+  setTimeout(()=>{sbMsg('End '+SB.end+'. Swipe to throw your first puck.');sbDraw();},2000);
+}
+
+function sbFinish(){
+  const won=SB.youScore>SB.machScore;
+  document.getElementById('end-title').textContent=won?'Well Played':'Close Match';
+  document.getElementById('end-msg').textContent='Final score: You '+SB.youScore+' — Machine '+SB.machScore+'\n\n'+(won?'The Machine acknowledges the outcome with the dignity you would expect.':'The Machine wins, narrowly. It is making a concerted effort not to gloat.\n\nIt is not entirely succeeding.');
+  completeSession('shuffleboard',{youScore:SB.youScore,machScore:SB.machScore,ends:SB_ENDS});
+  showScreen('end');
+}
+
+function sbMsg(m){document.getElementById('sb-msg').textContent=m;}
+
+function sbDraw(){
+  const cv=document.getElementById('sb-canvas');if(!cv)return;
+  const dpr=window.devicePixelRatio||1;
+  const ctx=cv.getContext('2d');
+  ctx.clearRect(0,0,SB_W*dpr,SB_H*dpr);
+  // Court surface
+  ctx.fillStyle='#0e1e12';
+  ctx.beginPath();if(ctx.roundRect)ctx.roundRect(SB_LEFT,SB_TOP,SB_RIGHT-SB_LEFT,SB_BOT-SB_TOP,6);else ctx.rect(SB_LEFT,SB_TOP,SB_RIGHT-SB_LEFT,SB_BOT-SB_TOP);ctx.fill();
+  // Scoring zones
+  const zones=[{y:SB_TOP,h:SB_Z3-SB_TOP,pts:'3',col:'rgba(201,160,80,.12)'},{y:SB_Z3,h:SB_Z2-SB_Z3,pts:'2',col:'rgba(58,138,154,.09)'},{y:SB_Z2,h:SB_Z1-SB_Z2,pts:'1',col:'rgba(255,255,255,.04)'}];
+  zones.forEach(z=>{
+    ctx.fillStyle=z.col;ctx.fillRect(SB_LEFT,z.y,SB_RIGHT-SB_LEFT,z.h);
+    ctx.fillStyle='rgba(255,255,255,.2)';ctx.font='11px Jost,system-ui,sans-serif';ctx.textAlign='left';
+    ctx.fillText(z.pts,SB_LEFT+5,z.y+14);
+  });
+  // Dead line
+  ctx.strokeStyle='rgba(200,80,80,.4)';ctx.lineWidth=1;ctx.setLineDash([5,4]);
+  ctx.beginPath();ctx.moveTo(SB_LEFT,SB_SCORE_LINE);ctx.lineTo(SB_RIGHT,SB_SCORE_LINE);ctx.stroke();
+  ctx.setLineDash([]);
+  // Court border
+  ctx.strokeStyle='rgba(201,160,80,.2)';ctx.lineWidth=1;
+  ctx.beginPath();if(ctx.roundRect)ctx.roundRect(SB_LEFT,SB_TOP,SB_RIGHT-SB_LEFT,SB_BOT-SB_TOP,6);else ctx.rect(SB_LEFT,SB_TOP,SB_RIGHT-SB_LEFT,SB_BOT-SB_TOP);ctx.stroke();
+  // Center line
+  ctx.strokeStyle='rgba(255,255,255,.07)';ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(SB_W/2,SB_TOP);ctx.lineTo(SB_W/2,SB_BOT);ctx.stroke();
+  // Aim line while dragging
+  if(SB.drag&&SB.drag.ex){
+    ctx.strokeStyle='rgba(201,160,80,.35)';ctx.lineWidth=1.5;ctx.setLineDash([5,5]);
+    ctx.beginPath();ctx.moveTo(SB.drag.x,SB.drag.y);ctx.lineTo(SB.drag.ex,SB.drag.ey);ctx.stroke();
+    ctx.setLineDash([]);
+  }
+  // Pucks
+  SB.pucks.forEach(p=>{
+    const isYou=p.owner==='you';
+    ctx.beginPath();ctx.arc(p.x,p.y,SB_PR,0,Math.PI*2);
+    ctx.fillStyle=isYou?'rgba(201,160,80,.9)':'rgba(58,138,154,.9)';ctx.fill();
+    ctx.strokeStyle=isYou?'#e8c878':'#5aacbc';ctx.lineWidth=1.5;ctx.stroke();
+    // Indicator dot
+    ctx.beginPath();ctx.arc(p.x,p.y,3,0,Math.PI*2);
+    ctx.fillStyle=isYou?'rgba(255,255,255,.6)':'rgba(255,255,255,.5)';ctx.fill();
+  });
+  // Launch zone indicator
+  ctx.fillStyle='rgba(201,160,80,.15)';
+  ctx.beginPath();ctx.arc(SB_W/2,SB_BOT-SB_PR-2,SB_PR+4,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle='rgba(201,160,80,.3)';ctx.lineWidth=1;ctx.setLineDash([3,3]);
+  ctx.beginPath();ctx.arc(SB_W/2,SB_BOT-SB_PR-2,SB_PR+4,0,Math.PI*2);ctx.stroke();
+  ctx.setLineDash([]);
+}
+/* ══════════════════════════════════════════════════════════
+   LEXICON
+   ══════════════════════════════════════════════════════════ */
+let LEX={queue:[],idx:0,score:0,answered:false};
+
+function startLex(){
+  LEX={queue:shuffle([...LEXICON]).slice(0,10),idx:0,score:0,answered:false};
+  document.getElementById('lex-tot').textContent=LEX.queue.length;
+  document.getElementById('lex-score').textContent=0;
+  loadLexWord();
+  showScreen('lex');
+}
+
+function loadLexWord(){
+  LEX.answered=false;
+  const w=LEX.queue[LEX.idx];
+  document.getElementById('lex-n').textContent=LEX.idx+1;
+  document.getElementById('lex-word').textContent=w.w;
+  document.getElementById('lex-pos').textContent=w.pos;
+  document.getElementById('lex-msg').className='lex-msg';
+  document.getElementById('lex-next').style.display='none';
+  const opts=shuffle([{text:w.real,real:true},...w.fakes.map(f=>({text:f,real:false}))]);
+  const og=document.getElementById('lex-opts');og.innerHTML='';
+  opts.forEach(opt=>{
+    const b=document.createElement('button');b.className='lex-opt';b.textContent=opt.text;
+    b.onclick=()=>lexAnswer(b,opt.real,w);og.appendChild(b);
+  });
+}
+
+function lexAnswer(btn,isReal,word){
+  if(LEX.answered)return;LEX.answered=true;
+  document.querySelectorAll('.lex-opt').forEach(b=>{
+    b.disabled=true;
+    if(b===btn){b.classList.add(isReal?'good':'bad');}
+    else if(isReal&&b.textContent===word.real){b.classList.add('good');}
+  });
+  const msg=document.getElementById('lex-msg');
+  if(isReal){
+    LEX.score++;
+    document.getElementById('lex-score').textContent=LEX.score;
+    msg.textContent=rand(["Correct. The Machine's invented definitions didn't fool you.","Precisely. The genuine article.","Yes. The Machine notes your vocabulary is not easily deceived.","Right. The Machine composed those alternatives with some care. You saw through them anyway."]);
+  } else {
+    msg.textContent='The genuine definition: '+word.real+'\n\n'+rand(["The Machine's invention was, it admits, plausible.","The Machine is not sorry for the deception. That was the game.","Close. The Machine's counterfeit was apparently convincing enough.","The Machine maintains that its fabrication had a certain internal logic."]);
+  }
+  msg.className='lex-msg show';
+  document.getElementById('lex-next').style.display='inline-flex';
+}
+
+function lexNext(){
+  LEX.idx++;
+  if(LEX.idx>=LEX.queue.length){lexFinish();return;}
+  loadLexWord();window.scrollTo(0,0);
+}
+
+function lexFinish(){
+  const pct=Math.round(LEX.score/LEX.queue.length*100);
+  document.getElementById('end-title').textContent='The Lexicon — Complete';
+  document.getElementById('end-msg').textContent='Score: '+LEX.score+' of '+LEX.queue.length+' ('+pct+'%)\n\n'+
+    (pct>=90?"The Machine is genuinely impressed. Its fabrications fooled you exactly once, if at all.":
+     pct>=70?"A strong performance. The Machine's deceptions were occasionally successful. It considers this a compliment to its craft.":
+     pct>=50?"A respectable showing. The Machine's invented definitions are, it maintains, of high quality.":
+     "The Machine confesses its definitions may have been somewhat too persuasive. It will adjust.");
+  completeSession('lexicon',{score:LEX.score,total:LEX.queue.length,pct});
+  showScreen('end');
+}
+
+/* ══════════════════════════════════════════════════════════
+   JOKE ENGINE
+   ══════════════════════════════════════════════════════════ */
+let JOKE={queue:[],idx:0,revealed:false,rated:false};
+
+function startJokes(){
+  JOKE={queue:shuffle([...JOKES]),idx:0,revealed:false,rated:false};
+  loadJoke();
+  showScreen('jokes');
+}
+
+function loadJoke(){
+  JOKE.revealed=false;JOKE.rated=false;
+  const j=JOKE.queue[JOKE.idx];
+  document.getElementById('joke-n').textContent=JOKE.idx+1;
+  document.getElementById('joke-setup').textContent=j.s;
+  const pl=document.getElementById('joke-punchline');
+  pl.textContent=j.p||'';pl.className='joke-punchline';
+  document.getElementById('joke-hint').style.display=j.p?'block':'none';
+  document.getElementById('joke-ratings').style.display='none';
+  document.getElementById('joke-response').className='joke-response';
+  document.getElementById('joke-next').style.display='none';
+  if(!j.p){
+    // Self-contained — no punchline to reveal
+    JOKE.revealed=true;
+    document.getElementById('joke-hint').style.display='none';
+    setTimeout(()=>{
+      document.getElementById('joke-ratings').style.display='flex';
+    },800);
+  }
+}
+
+function jokeReveal(){
+  if(JOKE.revealed)return;
+  const j=JOKE.queue[JOKE.idx];
+  if(!j.p)return;
+  JOKE.revealed=true;
+  document.getElementById('joke-punchline').className='joke-punchline show';
+  document.getElementById('joke-hint').style.display='none';
+  setTimeout(()=>{document.getElementById('joke-ratings').style.display='flex';},500);
+}
+
+function rateJoke(rating){
+  if(JOKE.rated)return;JOKE.rated=true;
+  document.querySelectorAll('.rating-btn').forEach(b=>b.disabled=true);
+  const resp=document.getElementById('joke-response');
+  resp.textContent=rand(JOKE_RES[rating]);
+  resp.className='joke-response show';
+  document.getElementById('joke-next').style.display='inline-flex';
+}
+
+function jokeNext(){
+  JOKE.idx=(JOKE.idx+1)%JOKE.queue.length;
+  loadJoke();window.scrollTo(0,0);
+}
+
+/* ══════════════════════════════════════════════════════════
+   ARCHIVE
+   ══════════════════════════════════════════════════════════ */
+function openArchive(){
+  const ns=loadN();
+  const body=document.getElementById('arc-body');body.innerHTML='';
+  CHAPTERS.forEach((ch,i)=>{
+    const div=document.createElement('div');div.className='arc-chapter';
+    if(i<=ns.ch){
+      div.innerHTML='<div class="arc-num">Chapter '+(i+1)+'</div><div class="arc-title">'+ch.title+'</div><div class="arc-text">'+ch.archiveText+'</div>';
+    } else {
+      div.innerHTML='<div class="arc-num">Chapter '+(i+1)+'</div><div class="arc-title" style="opacity:.18;filter:blur(3px)">'+ch.title+'</div><div class="arc-locked">This chapter has not yet been unlocked.</div>';
+    }
+    body.appendChild(div);
+  });
+  document.getElementById('arc-overlay').classList.add('show');
+}
+function closeArchive(){document.getElementById('arc-overlay').classList.remove('show');}
+
+/* ══════════════════════════════════════════════════════════
+   DASHBOARD
+   ══════════════════════════════════════════════════════════ */
+function openDash(){renderDash();document.getElementById('dash-overlay').classList.add('show');}
+function closeDash(){document.getElementById('dash-overlay').classList.remove('show');}
+
+function renderDash(){
+  const all=loadS(),ns=loadN();
+  const body=document.getElementById('dash-body');body.innerHTML='';
+  if(!all.length){body.innerHTML='<div class="dash-empty">No sessions recorded yet.</div>'+emailBlock();return;}
+  const last=new Date(all[all.length-1].date);
+  const daysSince=Math.floor((Date.now()-last)/86400000);
+  const chName=CHAPTERS[ns.ch]?.title||'—';
+  const gameCounts={blackjack:0,shuffleboard:0,lexicon:0,jokes:0};
+  all.forEach(s=>{if(gameCounts[s.game]!==undefined)gameCounts[s.game]++;});
+  const fav=Object.entries(gameCounts).sort((a,b)=>b[1]-a[1])[0];
+  body.innerHTML=`
+    <div class="stats-row">
+      <div class="stat"><div class="stat-val">${all.length}</div><div class="stat-lbl">Sessions</div><div class="stat-note">${daysSince===0?'Today':daysSince+'d ago'}</div></div>
+      <div class="stat"><div class="stat-val">${ns.ch+1}/${CHAPTERS.length}</div><div class="stat-lbl">Chapter</div><div class="stat-note" style="font-size:.68rem">${chName}</div></div>
+      <div class="stat"><div class="stat-val">${fav[1]}</div><div class="stat-lbl">${fav[0].charAt(0).toUpperCase()+fav[0].slice(1)}</div><div class="stat-note">Most played</div></div>
+    </div>
+    <div class="dsec"><div class="dsec-title">Recent Sessions</div><div class="chart-wrap" style="padding:0;overflow:hidden">${sessTable(all.slice(-12).reverse())}</div></div>
+    <div class="dsec"><div class="dsec-title">Actions</div>${emailBlock()}<div class="dash-actions" style="margin-top:10px"><button class="da da-blue" onclick="emailReport()">✉ Email Report</button><button class="da da-red" onclick="clearData()">✕ Clear Data</button></div></div>
+  `;
+}
+
+function sessTable(rows){
+  if(!rows.length)return'<div class="dash-empty">No sessions yet.</div>';
+  const fmt={blackjack:'Blackjack',shuffleboard:'Shuffleboard',lexicon:'Lexicon',jokes:'Jokes'};
+  return'<table class="sess-table"><thead><tr><th>Date</th><th>Game</th><th>Result</th></tr></thead><tbody>'+
+    rows.map(s=>{
+      const d=new Date(s.date);
+      const ds=(d.getMonth()+1)+'/'+d.getDate()+' '+d.getHours()+':'+String(d.getMinutes()).padStart(2,'0');
+      let result='—';
+      if(s.game==='blackjack')result=s.finalChips>500?'<span class="pill pill-hi">+chips</span>':s.finalChips<500?'<span class="pill pill-lo">-chips</span>':'<span class="pill pill-mid">even</span>';
+      if(s.game==='shuffleboard')result=s.youScore>s.machScore?'<span class="pill pill-hi">Win</span>':s.youScore<s.machScore?'<span class="pill pill-lo">Loss</span>':'<span class="pill pill-mid">Draw</span>';
+      if(s.game==='lexicon')result='<span class="pill '+(s.pct>=70?'pill-hi':s.pct>=50?'pill-mid':'pill-lo')+'">'+s.pct+'%</span>';
+      if(s.game==='jokes')result='<span class="pill pill-mid">'+s.count+' jokes</span>';
+      return'<tr><td>'+ds+'</td><td><span class="chip-tag">'+(fmt[s.game]||s.game)+'</span></td><td>'+result+'</td></tr>';
+    }).join('')+'</tbody></table>';
+}
+
+function emailBlock(){return'<div><label class="dash-input-label" for="em-in">Caregiver email</label><input id="em-in" class="dash-input" type="email" placeholder="your@email.com" value="'+loadEmail()+'" oninput="saveEmail(this.value)" style="user-select:text;-webkit-user-select:text"/></div>';}
+
+function emailReport(){
+  const all=loadS();if(!all.length){toast('No session data yet.');return;}
+  const em=loadEmail();if(!em){toast('Enter your email address first.');document.getElementById('em-in')?.focus();return;}
+  const ns=loadN();
+  const last=new Date(all[all.length-1].date);
+  const daysSince=Math.floor((Date.now()-last)/86400000);
+  const gameCounts={};all.forEach(s=>{gameCounts[s.game]=(gameCounts[s.game]||0)+1;});
+  const fav=Object.entries(gameCounts).sort((a,b)=>b[1]-a[1])[0];
+  const body='THE CURIOUS MACHINE — Session Report\nGenerated: '+new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'})+'\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━\nSUMMARY\n━━━━━━━━━━━━━━━━━━━━━━━━━━━\nTotal sessions: '+all.length+'\nLast played: '+(daysSince===0?'today':daysSince+' day(s) ago')+'\nStory chapter: "'+CHAPTERS[ns.ch]?.title+'" ('+(ns.ch+1)+'/'+CHAPTERS.length+')\nFavourite activity: '+fav[0]+' ('+fav[1]+' session'+(fav[1]===1?'':'s')+')\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━\nLAST 5 SESSIONS\n━━━━━━━━━━━━━━━━━━━━━━━━━━━\n'+all.slice(-5).reverse().map(s=>{const d=new Date(s.date);return'  '+(d.getMonth()+1)+'/'+d.getDate()+' | '+s.game;}).join('\n')+'\n\nGenerated by The Curious Machine.\n';
+  window.location.href='mailto:'+em+'?subject='+encodeURIComponent('Curious Machine Report — '+new Date().toLocaleDateString())+'&body='+encodeURIComponent(body);
+}
+
+function clearData(){
+  if(!confirm('Erase all session history and story progress?'))return;
+  localStorage.removeItem(SK);localStorage.removeItem(NK);
+  renderDash();toast('Data cleared.');
+}
+
+/* ── STARFIELD ────────────────────────────────────────────── */
+(function(){
+  const c=document.getElementById('starfield');
+  for(let i=0;i<70;i++){
+    const s=document.createElement('div');s.className='star';
+    const sz=Math.random()*2+.5;
+    s.style.cssText='width:'+sz+'px;height:'+sz+'px;left:'+Math.random()*100+'%;top:'+Math.random()*100+'%;--d:'+(3+Math.random()*5)+'s;--delay:'+Math.random()*6+'s;--op:'+(0.2+Math.random()*0.5);
+    c.appendChild(s);
+  }
+})();
+
+/* ── INIT ─────────────────────────────────────────────────── */
+refreshWelcome();
+</script>
+</body>
+</html>
